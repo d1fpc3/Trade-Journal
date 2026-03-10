@@ -8,8 +8,9 @@
     "server": "node --experimental-sqlite server/index.js",
     "client": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "start": "node --experimental-sqlite server/index.js",
-    "install:all": "npm install && cd client && npm install"
+    "start": "NODE_ENV=production node --experimental-sqlite server/index.js",
+    "install:all": "npm install && cd client && npm install",
+    "postinstall": "cd client && npm install"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

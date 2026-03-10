@@ -3,6 +3,6 @@ client/node_modules/
 dist/
 client/dist/
 .env
-*.db
+data/
 server/uploads/*
 !server/uploads/.gitkeep
