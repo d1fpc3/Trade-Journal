@@ -58,7 +58,7 @@ export default function Navbar() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
-            Trade Journal
+            Edgeflow
           </span>
         </NavLink>
 

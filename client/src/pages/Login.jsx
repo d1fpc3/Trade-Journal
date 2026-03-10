@@ -66,7 +66,7 @@ export default function Login() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
-            Trade Journal
+            Edgeflow
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Track, analyze, and improve your trading
