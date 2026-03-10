@@ -39,9 +39,9 @@ function computeAnalytics(trades) {
   };
 }
 
-function StatCard({ label, value, valueColor, sub, glow }) {
+function StatCard({ label, value, valueColor, sub, glow, delay }) {
   return (
-    <div className="stat-card">
+    <div className="stat-card" style={{ animationDelay: delay || '0s' }}>
       <p className="stat-label">{label}</p>
       <p className={`stat-value${glow === 'green' ? ' glow-green' : glow === 'red' ? ' glow-red' : ''}`}
         style={{ color: valueColor }}>{value}</p>
@@ -74,6 +74,7 @@ export default function Dashboard() {
       {/* Stats grid */}
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <StatCard
+          delay="0.05s"
           label="Total P&L"
           value={formatPnl(analytics.totalPnl)}
           valueColor={analytics.totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}
@@ -81,6 +82,7 @@ export default function Dashboard() {
           sub={`${analytics.totalTrades} trades logged`}
         />
         <StatCard
+          delay="0.12s"
           label="Win Rate"
           value={analytics.totalTrades > 0 ? `${analytics.winRate}%` : '—'}
           valueColor={analytics.winRate >= 50 ? 'var(--green)' : analytics.totalTrades > 0 ? 'var(--red)' : 'var(--text-muted)'}
@@ -88,6 +90,7 @@ export default function Dashboard() {
           sub={`${analytics.winCount}W / ${analytics.lossCount}L`}
         />
         <StatCard
+          delay="0.19s"
           label="Today's P&L"
           value={formatPnl(analytics.todayPnl)}
           valueColor={analytics.todayPnl >= 0 ? 'var(--green)' : 'var(--red)'}
@@ -95,6 +98,7 @@ export default function Dashboard() {
           sub="Current session"
         />
         <StatCard
+          delay="0.26s"
           label="Avg Win"
           value={analytics.avgWin ? formatPnl(analytics.avgWin) : '—'}
           valueColor="var(--green)"
