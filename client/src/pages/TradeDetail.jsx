@@ -31,6 +31,7 @@ export default function TradeDetail() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [dragOver, setDragOver] = useState(false);
 
   const [form, setForm] = useState({});
 
@@ -97,11 +98,9 @@ export default function TradeDetail() {
     navigate('/trades');
   };
 
-  const handleUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-
-    files.forEach(file => {
+  const processUploadFiles = (files) => {
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
         const base64 = ev.target.result;
@@ -114,8 +113,15 @@ export default function TradeDetail() {
       };
       reader.readAsDataURL(file);
     });
-
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleUpload = (e) => processUploadFiles(e.target.files);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    processUploadFiles(e.dataTransfer.files);
   };
 
   const handleDeleteImage = (imageId) => {
@@ -365,7 +371,7 @@ export default function TradeDetail() {
         {/* Images */}
         <div className="card">
           <div className="flex-between" style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: '0.875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <h3 style={{ fontSize: '0.68rem', color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', opacity: 0.8 }}>
               Screenshots
             </h3>
             <button
@@ -387,7 +393,7 @@ export default function TradeDetail() {
           {trade.images && trade.images.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
               {trade.images.map(img => (
-                <div key={img.id} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                <div key={img.id} className="image-thumb">
                   <a href={img.data} target="_blank" rel="noopener noreferrer">
                     <img
                       src={img.data}
@@ -396,13 +402,8 @@ export default function TradeDetail() {
                     />
                   </a>
                   <button
+                    className="image-thumb-delete"
                     onClick={() => handleDeleteImage(img.id)}
-                    style={{
-                      position: 'absolute', top: 4, right: 4,
-                      background: 'rgba(255,71,87,0.85)', border: 'none', borderRadius: 4,
-                      color: '#fff', cursor: 'pointer', padding: '2px 6px', fontSize: '0.75rem',
-                      lineHeight: 1.5
-                    }}
                   >
                     ✕
                   </button>
@@ -410,16 +411,16 @@ export default function TradeDetail() {
               ))}
             </div>
           ) : (
-            <div style={{
-              textAlign: 'center', padding: '32px 16px',
-              border: '2px dashed var(--border)', borderRadius: 8,
-              cursor: 'pointer'
-            }}
+            <div
+              className={`upload-zone${dragOver ? ' drag-over' : ''}`}
               onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
             >
-              <p style={{ fontSize: '2rem', marginBottom: 8 }}>🖼️</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Click to upload screenshots</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>PNG, JPG, GIF</p>
+              <p style={{ fontSize: '1.8rem', marginBottom: 8, opacity: 0.5 }}>🖼</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', fontWeight: 500 }}>Drop images or click to upload</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 4, fontFamily: 'var(--font-mono)' }}>PNG, JPG, GIF, WEBP</p>
             </div>
           )}
         </div>

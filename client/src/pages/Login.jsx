@@ -34,15 +34,24 @@ export default function Login() {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Ambient background */}
+      {/* Void background layers */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(5,216,144,0.07) 0%, transparent 60%)'
+        background: 'radial-gradient(ellipse 70% 60% at 50% 40%, rgba(168,85,247,0.1) 0%, transparent 60%)'
       }} />
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(28,28,46,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(28,28,46,0.4) 1px, transparent 1px)',
-        backgroundSize: '48px 48px'
+        background: 'radial-gradient(ellipse 50% 40% at 20% 80%, rgba(0,255,136,0.06) 0%, transparent 50%)'
+      }} />
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(18,18,42,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(18,18,42,0.35) 1px, transparent 1px)',
+        backgroundSize: '52px 52px'
+      }} />
+      {/* Vignette */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%)'
       }} />
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
@@ -50,42 +59,52 @@ export default function Login() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={{
-            width: 64, height: 64,
-            background: 'linear-gradient(135deg, #05d890 0%, #00a06a 100%)',
-            borderRadius: 18,
+            width: 72, height: 72,
+            background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #00ff88 100%)',
+            borderRadius: 22,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.75rem',
+            fontSize: '1.9rem',
             margin: '0 auto 20px',
-            boxShadow: '0 0 40px rgba(5,216,144,0.3), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)'
+            boxShadow: '0 0 50px rgba(168,85,247,0.45), 0 0 80px rgba(168,85,247,0.2), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2)'
           }}>📈</div>
           <h1 style={{
-            fontSize: '1.75rem', fontWeight: 800, marginBottom: 8,
-            letterSpacing: '-0.03em',
-            background: 'linear-gradient(135deg, #f0f0ff 0%, #8888b0 100%)',
+            fontSize: '2rem', fontWeight: 800, marginBottom: 8,
+            letterSpacing: '-0.04em',
+            background: 'linear-gradient(135deg, #e8e8ff 0%, #a855f7 50%, #00ff88 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
             Trade Journal
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Track, analyze, and improve your trading
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+            track. analyze. dominate.
           </p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'linear-gradient(145deg, #0f0f18 0%, #0c0c14 100%)',
-          border: '1px solid rgba(28,28,46,0.9)',
-          borderRadius: 20,
-          padding: '32px 36px',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(5,216,144,0.04), inset 0 1px 0 rgba(255,255,255,0.04)'
+          background: 'linear-gradient(145deg, rgba(10, 7, 22, 0.98) 0%, rgba(6, 4, 16, 0.99) 100%)',
+          border: '1px solid rgba(168,85,247,0.2)',
+          borderRadius: 22,
+          padding: '34px 38px',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(168,85,247,0.06), 0 0 60px rgba(168,85,247,0.07), inset 0 1px 0 rgba(255,255,255,0.04)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          {/* Top glow line */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.7) 30%, rgba(0,255,136,0.4) 70%, transparent 100%)'
+          }} />
+
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>
             Welcome back
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: 28 }}>
-            Enter your password to access your journal
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 28, fontFamily: 'var(--font-mono)' }}>
+            Enter your password to access the void
           </p>
 
           {error && (
@@ -106,7 +125,7 @@ export default function Login() {
                 required
                 autoFocus
                 autoComplete="current-password"
-                style={{ fontSize: '1rem', padding: '12px 14px', letterSpacing: '0.1em' }}
+                style={{ fontSize: '1rem', padding: '12px 14px', letterSpacing: '0.15em' }}
               />
             </div>
 
@@ -120,35 +139,36 @@ export default function Login() {
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{
                     width: 14, height: 14,
-                    border: '2px solid rgba(2,26,14,0.4)',
-                    borderTopColor: '#021a0e',
+                    border: '2px solid rgba(0,24,8,0.4)',
+                    borderTopColor: '#001808',
                     borderRadius: '50%',
                     display: 'inline-block',
                     animation: 'spin 0.7s linear infinite'
                   }} />
                   Signing in...
                 </span>
-              ) : 'Sign In'}
+              ) : 'Enter the Journal'}
             </button>
           </form>
 
           <div style={{
             marginTop: 24,
             padding: '10px 14px',
-            background: 'rgba(5,216,144,0.05)',
+            background: 'rgba(168,85,247,0.06)',
             borderRadius: 8,
-            border: '1px solid rgba(5,216,144,0.12)',
-            fontSize: '0.78rem',
+            border: '1px solid rgba(168,85,247,0.15)',
+            fontSize: '0.76rem',
             color: 'var(--text-muted)',
-            textAlign: 'center'
+            textAlign: 'center',
+            fontFamily: 'var(--font-mono)'
           }}>
-            Default password: <strong style={{ color: 'var(--green)', letterSpacing: '0.05em' }}>trader123</strong>
+            Default password: <strong style={{ color: 'var(--purple)', letterSpacing: '0.08em', textShadow: '0 0 10px rgba(168,85,247,0.5)' }}>trader123</strong>
           </div>
         </div>
 
         {/* Footer */}
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-          Your trades are stored locally in your browser
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' }}>
+          Trades stored locally in your browser
         </p>
       </div>
     </div>

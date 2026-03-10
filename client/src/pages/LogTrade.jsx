@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addTrade } from '../utils/storage.js';
 
@@ -12,7 +12,10 @@ const MISTAKE_OPTIONS = [
 
 export default function LogTrade() {
   const navigate = useNavigate();
+  const fileRef = useRef();
   const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [images, setImages] = useState([]);
 
   const [form, setForm] = useState({
     symbol: '',
@@ -30,6 +33,29 @@ export default function LogTrade() {
   });
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const readFiles = (files) => {
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const imageId = Date.now().toString() + Math.random().toString(36).slice(2);
+        setImages(prev => [...prev, { id: imageId, data: ev.target.result, name: file.name }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleFileChange = (e) => readFiles(e.target.files);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    readFiles(e.dataTransfer.files);
+  };
+
+  const removeImage = (id) => setImages(prev => prev.filter(img => img.id !== id));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -52,7 +78,7 @@ export default function LogTrade() {
       grade: form.grade,
       mistakes: form.mistakes,
       notes: form.notes,
-      images: [],
+      images,
       created_at: new Date().toISOString()
     };
 
@@ -64,14 +90,14 @@ export default function LogTrade() {
     <div className="page-container" style={{ maxWidth: 720 }}>
       <div className="page-header">
         <h1 className="page-title">Log Trade</h1>
-        <p className="page-subtitle">Record a new trade entry</p>
+        <p className="page-subtitle">// record a new trade entry</p>
       </div>
 
       {error && <div className="error-msg" style={{ marginBottom: 16 }}>{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="card">
-          <h3 style={{ marginBottom: 20, fontSize: '1rem', color: 'var(--text-muted)' }}>Trade Details</h3>
+          <h3 style={{ marginBottom: 20, fontSize: '0.72rem', color: 'var(--purple)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8 }}>Trade Details</h3>
 
           <div className="grid-2" style={{ gap: 16, marginBottom: 16 }}>
             <div className="form-group">
@@ -82,7 +108,7 @@ export default function LogTrade() {
                 onChange={e => set('symbol', e.target.value.toUpperCase())}
                 placeholder="AAPL, BTC, EUR/USD"
                 required
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 600 }}
               />
             </div>
 
@@ -97,15 +123,25 @@ export default function LogTrade() {
                     className="btn flex-1"
                     style={{
                       justifyContent: 'center',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      letterSpacing: '0.06em',
                       background: form.direction === dir
-                        ? (dir === 'LONG' ? 'var(--green-dim)' : 'var(--red-dim)')
-                        : 'var(--bg-input)',
+                        ? (dir === 'LONG' ? 'rgba(0,255,136,0.1)' : 'rgba(255,26,74,0.1)')
+                        : 'rgba(3,3,10,0.95)',
                       border: `1px solid ${form.direction === dir
-                        ? (dir === 'LONG' ? 'var(--green)' : 'var(--red)')
-                        : 'var(--border)'}`,
+                        ? (dir === 'LONG' ? 'rgba(0,255,136,0.5)' : 'rgba(255,26,74,0.5)')
+                        : 'var(--border-light)'}`,
                       color: form.direction === dir
                         ? (dir === 'LONG' ? 'var(--green)' : 'var(--red)')
-                        : 'var(--text-muted)'
+                        : 'var(--text-muted)',
+                      boxShadow: form.direction === dir
+                        ? (dir === 'LONG' ? '0 0 16px rgba(0,255,136,0.15)' : '0 0 16px rgba(255,26,74,0.15)')
+                        : 'none',
+                      textShadow: form.direction === dir
+                        ? (dir === 'LONG' ? '0 0 10px rgba(0,255,136,0.5)' : '0 0 10px rgba(255,26,74,0.5)')
+                        : 'none'
                     }}
                   >
                     {dir === 'LONG' ? '▲ LONG' : '▼ SHORT'}
@@ -126,7 +162,7 @@ export default function LogTrade() {
                 placeholder="e.g. 250 or -100"
                 step="any"
                 required
-                style={{ fontFamily: 'monospace' }}
+                style={{ fontFamily: 'var(--font-mono)' }}
               />
             </div>
 
@@ -140,6 +176,7 @@ export default function LogTrade() {
                 placeholder="Shares / contracts"
                 step="any"
                 min="0"
+                style={{ fontFamily: 'var(--font-mono)' }}
               />
             </div>
 
@@ -178,6 +215,7 @@ export default function LogTrade() {
                 placeholder="0.00"
                 step="any"
                 min="0"
+                style={{ fontFamily: 'var(--font-mono)' }}
               />
             </div>
           </div>
@@ -210,10 +248,11 @@ export default function LogTrade() {
                     onClick={() => set('grade', form.grade === g ? '' : g)}
                     className="btn flex-1"
                     style={{
-                      justifyContent: 'center', fontWeight: 700,
-                      background: form.grade === g ? (g === 'A' ? 'var(--green-dim)' : g === 'B' ? 'rgba(255,165,0,0.15)' : 'var(--red-dim)') : 'var(--bg-input)',
-                      border: `1px solid ${form.grade === g ? (g === 'A' ? 'var(--green)' : g === 'B' ? 'orange' : 'var(--red)') : 'var(--border)'}`,
-                      color: form.grade === g ? (g === 'A' ? 'var(--green)' : g === 'B' ? 'orange' : 'var(--red)') : 'var(--text-muted)'
+                      justifyContent: 'center', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
+                      background: form.grade === g ? (g === 'A' ? 'rgba(0,255,136,0.1)' : g === 'B' ? 'rgba(255,165,0,0.12)' : 'rgba(255,26,74,0.1)') : 'rgba(3,3,10,0.95)',
+                      border: `1px solid ${form.grade === g ? (g === 'A' ? 'rgba(0,255,136,0.5)' : g === 'B' ? 'rgba(255,165,0,0.5)' : 'rgba(255,26,74,0.5)') : 'var(--border-light)'}`,
+                      color: form.grade === g ? (g === 'A' ? 'var(--green)' : g === 'B' ? '#ffa500' : 'var(--red)') : 'var(--text-muted)',
+                      boxShadow: form.grade === g ? (g === 'A' ? '0 0 14px rgba(0,255,136,0.15)' : g === 'B' ? '0 0 14px rgba(255,165,0,0.15)' : '0 0 14px rgba(255,26,74,0.15)') : 'none'
                     }}
                   >{g}</button>
                 ))}
@@ -232,11 +271,13 @@ export default function LogTrade() {
                     type="button"
                     onClick={() => set('mistakes', active ? form.mistakes.filter(x => x !== m) : [...form.mistakes, m])}
                     style={{
-                      padding: '4px 12px', borderRadius: 20, fontSize: '0.78rem', cursor: 'pointer',
-                      border: `1px solid ${active ? 'var(--red)' : 'var(--border)'}`,
-                      background: active ? 'var(--red-dim)' : 'var(--bg-input)',
+                      padding: '4px 12px', borderRadius: 20, fontSize: '0.76rem', cursor: 'pointer',
+                      border: `1px solid ${active ? 'rgba(255,26,74,0.5)' : 'var(--border-light)'}`,
+                      background: active ? 'rgba(255,26,74,0.1)' : 'rgba(3,3,10,0.95)',
                       color: active ? 'var(--red)' : 'var(--text-muted)',
-                      transition: 'all 0.15s'
+                      transition: 'all 0.15s',
+                      textShadow: active ? '0 0 8px rgba(255,26,74,0.5)' : 'none',
+                      boxShadow: active ? '0 0 10px rgba(255,26,74,0.1)' : 'none'
                     }}
                   >{m}</button>
                 );
@@ -244,7 +285,7 @@ export default function LogTrade() {
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 16 }}>
             <label className="form-label">Notes</label>
             <textarea
               className="form-textarea"
@@ -253,6 +294,66 @@ export default function LogTrade() {
               placeholder="What did you see? Execution thoughts, lessons learned..."
               rows={3}
             />
+          </div>
+
+          {/* Photo Upload */}
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Screenshots / Photos</label>
+
+            <div
+              className={`upload-zone${dragOver ? ' drag-over' : ''}`}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <div style={{ fontSize: '1.8rem', marginBottom: 8, opacity: 0.6 }}>🖼</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', fontWeight: 500 }}>
+                Drop images here or click to upload
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
+                PNG, JPG, GIF, WEBP — multiple files supported
+              </p>
+            </div>
+
+            {images.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginTop: 12 }}>
+                {images.map(img => (
+                  <div key={img.id} className="image-thumb">
+                    <img
+                      src={img.data}
+                      alt={img.name}
+                      style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }}
+                    />
+                    <button
+                      type="button"
+                      className="image-thumb-delete"
+                      onClick={e => { e.stopPropagation(); removeImage(img.id); }}
+                    >
+                      ✕
+                    </button>
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      background: 'linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%)',
+                      padding: '4px 6px',
+                      fontSize: '0.6rem', color: 'var(--text-muted)',
+                      fontFamily: 'var(--font-mono)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      {img.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

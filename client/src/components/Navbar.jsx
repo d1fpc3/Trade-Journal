@@ -16,15 +16,23 @@ export default function Navbar() {
 
   return (
     <nav style={{
-      background: 'rgba(8, 8, 14, 0.88)',
-      borderBottom: '1px solid rgba(28,28,46,0.8)',
+      background: 'rgba(2, 1, 8, 0.92)',
+      borderBottom: '1px solid rgba(168, 85, 247, 0.15)',
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
-      boxShadow: '0 1px 0 rgba(5,216,144,0.06), 0 4px 24px rgba(0,0,0,0.4)'
+      backdropFilter: 'blur(32px)',
+      WebkitBackdropFilter: 'blur(32px)',
+      boxShadow: '0 1px 0 rgba(168,85,247,0.1), 0 0 40px rgba(168,85,247,0.05), 0 4px 32px rgba(0,0,0,0.7)'
     }}>
+      {/* Top accent line */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.8) 30%, rgba(0,255,136,0.5) 70%, transparent 100%)'
+      }} />
+
       <div style={{
         maxWidth: 1280,
         margin: '0 auto',
@@ -39,12 +47,12 @@ export default function Navbar() {
         {/* Logo */}
         <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{
-            width: 30, height: 30,
-            background: 'linear-gradient(135deg, #05d890 0%, #00a06a 100%)',
-            borderRadius: 8,
+            width: 32, height: 32,
+            background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #00ff88 100%)',
+            borderRadius: 9,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.9rem',
-            boxShadow: '0 0 14px rgba(5,216,144,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+            fontSize: '0.95rem',
+            boxShadow: '0 0 20px rgba(168,85,247,0.5), 0 0 40px rgba(168,85,247,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
             flexShrink: 0
           }}>
             📈
@@ -52,8 +60,8 @@ export default function Navbar() {
           <span style={{
             fontWeight: 800,
             fontSize: '1rem',
-            letterSpacing: '-0.03em',
-            background: 'linear-gradient(90deg, #f0f0ff 0%, #8888b0 100%)',
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(90deg, #e8e8ff 0%, #a855f7 60%, #00ff88 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
@@ -72,15 +80,16 @@ export default function Navbar() {
               style={({ isActive }) => ({
                 padding: '7px 14px',
                 borderRadius: 8,
-                fontSize: '0.875rem',
-                fontWeight: isActive ? 600 : 500,
+                fontSize: '0.84rem',
+                fontWeight: isActive ? 700 : 500,
                 textDecoration: 'none',
-                color: isActive ? '#05d890' : 'var(--text-secondary)',
-                background: isActive ? 'rgba(5,216,144,0.1)' : 'transparent',
-                border: isActive ? '1px solid rgba(5,216,144,0.2)' : '1px solid transparent',
+                color: isActive ? '#00ff88' : 'var(--text-secondary)',
+                background: isActive ? 'rgba(0,255,136,0.08)' : 'transparent',
+                border: isActive ? '1px solid rgba(0,255,136,0.25)' : '1px solid transparent',
                 transition: 'all 0.18s ease',
                 whiteSpace: 'nowrap',
-                boxShadow: isActive ? '0 0 12px rgba(5,216,144,0.12)' : 'none',
+                boxShadow: isActive ? '0 0 16px rgba(0,255,136,0.15)' : 'none',
+                textShadow: isActive ? '0 0 12px rgba(0,255,136,0.5)' : 'none',
                 letterSpacing: link.label.startsWith('+') ? '0.01em' : 'normal'
               })}
             >
@@ -94,26 +103,33 @@ export default function Navbar() {
           onClick={handleLogout}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid rgba(168,85,247,0.2)',
             borderRadius: 7,
             color: 'var(--text-muted)',
-            fontSize: '0.8rem',
-            fontWeight: 500,
+            fontSize: '0.78rem',
+            fontWeight: 600,
             padding: '6px 12px',
             cursor: 'pointer',
             transition: 'all 0.18s ease',
             fontFamily: 'inherit',
-            flexShrink: 0
+            flexShrink: 0,
+            letterSpacing: '0.03em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-mono)'
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--red)';
-            e.currentTarget.style.borderColor = 'rgba(255,61,90,0.3)';
-            e.currentTarget.style.background = 'rgba(255,61,90,0.06)';
+            e.currentTarget.style.borderColor = 'rgba(255,26,74,0.4)';
+            e.currentTarget.style.background = 'rgba(255,26,74,0.07)';
+            e.currentTarget.style.textShadow = '0 0 10px rgba(255,26,74,0.5)';
+            e.currentTarget.style.boxShadow = '0 0 16px rgba(255,26,74,0.1)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(168,85,247,0.2)';
             e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.textShadow = 'none';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           Sign out
