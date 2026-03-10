@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { getTrades, deleteTrade } from '../utils/storage.js';
 
 function formatPnl(val) {
   if (val === null || val === undefined) return '—';
@@ -14,12 +14,8 @@ function formatDate(str) {
 }
 
 export default function TradeHistory() {
-  const { authFetch } = useAuth();
   const navigate = useNavigate();
-  const [trades, setTrades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
+  const [allTrades, setAllTrades] = useState([]);
   const [filters, setFilters] = useState({
     symbol: '',
     direction: '',
@@ -28,49 +24,45 @@ export default function TradeHistory() {
     to_date: ''
   });
 
-  const fetchTrades = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
-      const res = await authFetch(`/api/trades?${params}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setTrades(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    setAllTrades(getTrades());
+  }, []);
 
-  useEffect(() => { fetchTrades(); }, []);
+  const filtered = allTrades.filter(t => {
+    if (filters.symbol && !t.symbol.toUpperCase().includes(filters.symbol.toUpperCase())) return false;
+    if (filters.direction && t.direction !== filters.direction) return false;
+    if (filters.status && t.status !== filters.status) return false;
+    if (filters.from_date && t.entry_date < filters.from_date) return false;
+    if (filters.to_date && t.entry_date > filters.to_date) return false;
+    return true;
+  });
 
-  const handleFilter = async (e) => {
-    e.preventDefault();
-    fetchTrades();
+  const totalPnl = filtered.filter(t => t.pnl !== null).reduce((s, t) => s + t.pnl, 0);
+
+  const handleDelete = (e, id) => {
+    e.stopPropagation();
+    if (!confirm('Delete this trade? This cannot be undone.')) return;
+    deleteTrade(id);
+    setAllTrades(getTrades());
   };
 
   const clearFilters = () => {
     setFilters({ symbol: '', direction: '', status: '', from_date: '', to_date: '' });
-    setTimeout(fetchTrades, 0);
   };
-
-  const totalPnl = trades.filter(t => t.pnl !== null).reduce((s, t) => s + t.pnl, 0);
 
   return (
     <div className="page-container">
       <div className="page-header flex-between flex-wrap" style={{ gap: 12 }}>
         <div>
           <h1 className="page-title">Trade History</h1>
-          <p className="page-subtitle">{trades.length} trade{trades.length !== 1 ? 's' : ''} found</p>
+          <p className="page-subtitle">{filtered.length} trade{filtered.length !== 1 ? 's' : ''} found</p>
         </div>
         <Link to="/log-trade" className="btn btn-primary">+ Log Trade</Link>
       </div>
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <form onSubmit={handleFilter} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
           <div className="form-group" style={{ minWidth: 120, flex: 1 }}>
             <label className="form-label">Symbol</label>
             <input
@@ -123,16 +115,13 @@ export default function TradeHistory() {
             />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button type="submit" className="btn btn-primary">Filter</button>
             <button type="button" className="btn btn-secondary" onClick={clearFilters}>Clear</button>
           </div>
-        </form>
+        </div>
       </div>
 
-      {error && <div className="error-msg" style={{ marginBottom: 16 }}>{error}</div>}
-
       {/* Summary bar */}
-      {trades.length > 0 && (
+      {filtered.length > 0 && (
         <div style={{
           display: 'flex', gap: 20, marginBottom: 16,
           padding: '12px 16px',
@@ -142,7 +131,7 @@ export default function TradeHistory() {
           flexWrap: 'wrap'
         }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Showing <strong style={{ color: 'var(--text-primary)' }}>{trades.length}</strong> trades
+            Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> trades
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             Total P&L: <strong style={{ color: totalPnl >= 0 ? 'var(--green)' : 'var(--red)', fontFamily: 'monospace' }}>
@@ -151,12 +140,12 @@ export default function TradeHistory() {
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             Open: <strong style={{ color: 'var(--blue)' }}>
-              {trades.filter(t => t.status === 'OPEN').length}
+              {filtered.filter(t => t.status === 'OPEN').length}
             </strong>
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             Closed: <strong style={{ color: 'var(--text-secondary)' }}>
-              {trades.filter(t => t.status === 'CLOSED').length}
+              {filtered.filter(t => t.status === 'CLOSED').length}
             </strong>
           </span>
         </div>
@@ -164,9 +153,7 @@ export default function TradeHistory() {
 
       {/* Table */}
       <div className="card" style={{ padding: 0 }}>
-        {loading ? (
-          <span className="spinner" style={{ margin: '40px auto' }} />
-        ) : trades.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📭</div>
             <p className="empty-state-text">No trades found</p>
@@ -187,10 +174,11 @@ export default function TradeHistory() {
                   <th>Strategy</th>
                   <th>Status</th>
                   <th>Entry Date</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {trades.map(trade => (
+                {filtered.map(trade => (
                   <tr key={trade.id} onClick={() => navigate(`/trades/${trade.id}`)}>
                     <td style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                       {trade.symbol}
@@ -200,9 +188,9 @@ export default function TradeHistory() {
                         {trade.direction}
                       </span>
                     </td>
-                    <td className="font-mono">${trade.entry_price.toLocaleString()}</td>
+                    <td className="font-mono">${Number(trade.entry_price).toLocaleString()}</td>
                     <td className="font-mono">
-                      {trade.exit_price ? `$${trade.exit_price.toLocaleString()}` : <span className="text-muted">—</span>}
+                      {trade.exit_price ? `$${Number(trade.exit_price).toLocaleString()}` : <span className="text-muted">—</span>}
                     </td>
                     <td>{trade.quantity}</td>
                     <td className={`font-mono ${trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : ''}`}>
@@ -223,6 +211,15 @@ export default function TradeHistory() {
                       </span>
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(trade.entry_date)}</td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={e => handleDelete(e, trade.id)}
+                        style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

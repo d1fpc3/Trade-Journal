@@ -1,58 +1,32 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+const DEFAULT_PASSWORD = 'trader123';
+const AUTH_KEY = 'tj_logged_in';
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem('tj_token'));
-  const [username, setUsername] = useState(() => localStorage.getItem('tj_username'));
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem(AUTH_KEY) === 'true';
+  });
 
-  useEffect(() => {
-    // Validate token on mount
-    if (token) {
-      fetch('/api/health', { headers: { Authorization: `Bearer ${token}` } })
-        .then(() => setLoading(false))
-        .catch(() => {
-          logout();
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
+  const login = (password) => {
+    const stored = localStorage.getItem('tj_password') || DEFAULT_PASSWORD;
+    if (password === stored) {
+      localStorage.setItem(AUTH_KEY, 'true');
+      setIsAuthenticated(true);
+      return true;
     }
-  }, []);
-
-  const login = (newToken, user) => {
-    setToken(newToken);
-    setUsername(user);
-    localStorage.setItem('tj_token', newToken);
-    localStorage.setItem('tj_username', user);
+    return false;
   };
 
   const logout = () => {
-    setToken(null);
-    setUsername(null);
-    localStorage.removeItem('tj_token');
-    localStorage.removeItem('tj_username');
-  };
-
-  const authFetch = async (url, options = {}) => {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...options.headers
-      }
-    });
-    if (res.status === 401) {
-      logout();
-      throw new Error('Unauthorized');
-    }
-    return res;
+    localStorage.removeItem(AUTH_KEY);
+    setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ token, username, loading, login, logout, authFetch, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

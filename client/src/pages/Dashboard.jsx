@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { getTrades } from '../utils/storage.js';
 
 function formatPnl(val) {
   if (val === null || val === undefined) return '—';
@@ -13,35 +13,52 @@ function formatDate(str) {
   return new Date(str).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function computeAnalytics(trades) {
+  const closed = trades.filter(t => t.status === 'CLOSED' && t.pnl !== null);
+  const open = trades.filter(t => t.status === 'OPEN');
+  const wins = closed.filter(t => t.pnl > 0);
+  const losses = closed.filter(t => t.pnl <= 0);
+  const totalPnl = closed.reduce((s, t) => s + t.pnl, 0);
+  const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : 0;
+  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : null;
+  const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : null;
+  const bestTrade = closed.length > 0 ? closed.reduce((best, t) => t.pnl > best.pnl ? t : best, closed[0]) : null;
+  const worstTrade = closed.length > 0 ? closed.reduce((worst, t) => t.pnl < worst.pnl ? t : worst, closed[0]) : null;
+  return {
+    totalPnl,
+    winRate,
+    winCount: wins.length,
+    lossCount: losses.length,
+    openTrades: open.length,
+    closedTrades: closed.length,
+    totalTrades: trades.length,
+    avgWin,
+    avgLoss,
+    bestTrade,
+    worstTrade
+  };
+}
+
+function StatCard({ label, value, valueColor, sub }) {
+  return (
+    <div className="stat-card">
+      <p className="stat-label">{label}</p>
+      <p className="stat-value" style={{ color: valueColor }}>{value}</p>
+      {sub && <p className="stat-sub">{sub}</p>}
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { authFetch } = useAuth();
   const navigate = useNavigate();
-  const [analytics, setAnalytics] = useState(null);
-  const [recentTrades, setRecentTrades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [trades, setTrades] = useState([]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [analyticsRes, tradesRes] = await Promise.all([
-          authFetch('/api/trades/analytics'),
-          authFetch('/api/trades?limit=5')
-        ]);
-        if (!analyticsRes.ok || !tradesRes.ok) throw new Error('Failed to load data');
-        const [a, trades] = await Promise.all([analyticsRes.json(), tradesRes.json()]);
-        setAnalytics(a);
-        setRecentTrades(trades.slice(0, 8));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    setTrades(getTrades());
   }, []);
 
-  if (loading) return <div className="page-container"><span className="spinner" /></div>;
+  const analytics = computeAnalytics(trades);
+  const recentTrades = trades.slice(0, 5);
 
   return (
     <div className="page-container">
@@ -53,33 +70,31 @@ export default function Dashboard() {
         <Link to="/log-trade" className="btn btn-primary">+ Log Trade</Link>
       </div>
 
-      {error && <div className="error-msg" style={{ marginBottom: 16 }}>{error}</div>}
-
       {/* Stats grid */}
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <StatCard
           label="Total P&L"
-          value={formatPnl(analytics?.totalPnl)}
-          valueColor={analytics?.totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}
-          sub={`${analytics?.closedTrades || 0} closed trades`}
+          value={formatPnl(analytics.totalPnl)}
+          valueColor={analytics.totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}
+          sub={`${analytics.closedTrades} closed trades`}
         />
         <StatCard
           label="Win Rate"
-          value={analytics?.winRate ? `${analytics.winRate}%` : '—'}
-          valueColor={analytics?.winRate >= 50 ? 'var(--green)' : 'var(--red)'}
-          sub={`${analytics?.winCount || 0}W / ${analytics?.lossCount || 0}L`}
+          value={analytics.closedTrades > 0 ? `${analytics.winRate}%` : '—'}
+          valueColor={analytics.winRate >= 50 ? 'var(--green)' : 'var(--red)'}
+          sub={`${analytics.winCount}W / ${analytics.lossCount}L`}
         />
         <StatCard
           label="Open Trades"
-          value={analytics?.openTrades ?? '—'}
+          value={analytics.openTrades}
           valueColor="var(--blue)"
           sub="Currently active"
         />
         <StatCard
           label="Total Trades"
-          value={analytics?.totalTrades ?? '—'}
+          value={analytics.totalTrades}
           valueColor="var(--text-primary)"
-          sub={`Avg win: ${formatPnl(analytics?.avgWin)}`}
+          sub={`Avg win: ${formatPnl(analytics.avgWin)}`}
         />
       </div>
 
@@ -122,8 +137,8 @@ export default function Dashboard() {
                         {trade.direction}
                       </span>
                     </td>
-                    <td className="font-mono">${trade.entry_price.toLocaleString()}</td>
-                    <td className="font-mono">{trade.exit_price ? `$${trade.exit_price.toLocaleString()}` : '—'}</td>
+                    <td className="font-mono">${Number(trade.entry_price).toLocaleString()}</td>
+                    <td className="font-mono">{trade.exit_price ? `$${Number(trade.exit_price).toLocaleString()}` : '—'}</td>
                     <td>{trade.quantity}</td>
                     <td className={`font-mono ${trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : ''}`}>
                       {formatPnl(trade.pnl)}
@@ -143,10 +158,10 @@ export default function Dashboard() {
       </div>
 
       {/* Best / Worst */}
-      {analytics && (analytics.bestTrade || analytics.worstTrade) && (
+      {(analytics.bestTrade || analytics.worstTrade) && (
         <div className="grid-2" style={{ marginTop: 20 }}>
           {analytics.bestTrade && (
-            <div className="card" style={{ borderColor: 'var(--green)', borderOpacity: 0.3 }}>
+            <div className="card" style={{ borderColor: '#00d4aa33' }}>
               <p className="card-title" style={{ color: 'var(--green)' }}>Best Trade</p>
               <p style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>
                 {formatPnl(analytics.bestTrade.pnl)}
@@ -157,7 +172,7 @@ export default function Dashboard() {
             </div>
           )}
           {analytics.worstTrade && (
-            <div className="card" style={{ borderColor: 'var(--red)', borderOpacity: 0.3 }}>
+            <div className="card" style={{ borderColor: '#ff475733' }}>
               <p className="card-title" style={{ color: 'var(--red)' }}>Worst Trade</p>
               <p style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--red)' }}>
                 {formatPnl(analytics.worstTrade.pnl)}
@@ -169,16 +184,6 @@ export default function Dashboard() {
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, valueColor, sub }) {
-  return (
-    <div className="stat-card">
-      <p className="stat-label">{label}</p>
-      <p className="stat-value" style={{ color: valueColor }}>{value}</p>
-      {sub && <p className="stat-sub">{sub}</p>}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, PieChart, Pie, Legend
 } from 'recharts';
-import { useAuth } from '../context/AuthContext.jsx';
+import { getTrades } from '../utils/storage.js';
 
 function formatPnl(val) {
   if (val === null || val === undefined) return '—';
@@ -18,7 +18,55 @@ function formatDate(str) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const CustomTooltip = ({ active, payload, label, prefix = '$' }) => {
+function computeAnalytics(trades) {
+  const closed = trades.filter(t => t.status === 'CLOSED' && t.pnl !== null);
+  const open = trades.filter(t => t.status === 'OPEN');
+  const wins = closed.filter(t => t.pnl > 0);
+  const losses = closed.filter(t => t.pnl <= 0);
+
+  const totalPnl = closed.reduce((s, t) => s + t.pnl, 0);
+  const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : 0;
+  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : null;
+  const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : null;
+
+  const bestTrade = closed.length > 0 ? closed.reduce((b, t) => t.pnl > b.pnl ? t : b, closed[0]) : null;
+  const worstTrade = closed.length > 0 ? closed.reduce((w, t) => t.pnl < w.pnl ? t : w, closed[0]) : null;
+
+  // Equity curve — sort by entry_date
+  const sorted = [...closed].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
+  let cum = 0;
+  const equityCurve = sorted.map(t => {
+    cum += t.pnl;
+    return { date: t.entry_date, cumulativePnl: parseFloat(cum.toFixed(2)) };
+  });
+
+  // P&L by symbol
+  const symbolMap = {};
+  closed.forEach(t => {
+    symbolMap[t.symbol] = (symbolMap[t.symbol] || 0) + t.pnl;
+  });
+  const pnlBySymbol = Object.entries(symbolMap)
+    .map(([symbol, pnl]) => ({ symbol, pnl: parseFloat(pnl.toFixed(2)) }))
+    .sort((a, b) => b.pnl - a.pnl);
+
+  return {
+    totalPnl,
+    winRate,
+    winCount: wins.length,
+    lossCount: losses.length,
+    openTrades: open.length,
+    closedTrades: closed.length,
+    totalTrades: trades.length,
+    avgWin,
+    avgLoss,
+    bestTrade,
+    worstTrade,
+    equityCurve,
+    pnlBySymbol
+  };
+}
+
+const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -31,29 +79,34 @@ const CustomTooltip = ({ active, payload, label, prefix = '$' }) => {
       <p style={{ color: '#8888aa', marginBottom: 4 }}>{label}</p>
       {payload.map((entry, i) => (
         <p key={i} style={{ color: entry.value >= 0 ? '#00d4aa' : '#ff4757', fontFamily: 'monospace', fontWeight: 600 }}>
-          {entry.value >= 0 ? '+' : ''}{prefix}{Math.abs(entry.value).toFixed(2)}
+          {entry.value >= 0 ? '+' : ''}${Math.abs(entry.value).toFixed(2)}
         </p>
       ))}
     </div>
   );
 };
 
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div className="stat-card">
+      <p className="stat-label">{label}</p>
+      <p className="stat-value" style={{ color: color || 'var(--text-primary)', fontSize: '1.5rem', fontFamily: 'monospace' }}>
+        {value}
+      </p>
+      {sub && <p className="stat-sub">{sub}</p>}
+    </div>
+  );
+}
+
 export default function Analytics() {
-  const { authFetch } = useAuth();
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    authFetch('/api/trades/analytics')
-      .then(res => res.json())
-      .then(d => setData(d))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+    const trades = getTrades();
+    setData(computeAnalytics(trades));
   }, []);
 
-  if (loading) return <div className="page-container"><span className="spinner" /></div>;
-  if (error) return <div className="page-container"><div className="error-msg">{error}</div></div>;
+  if (!data) return <div className="page-container"><span className="spinner" /></div>;
 
   const pieData = data.winCount > 0 || data.lossCount > 0 ? [
     { name: 'Wins', value: data.winCount, color: '#00d4aa' },
@@ -88,7 +141,7 @@ export default function Analytics() {
             />
             <StatCard
               label="Win Rate"
-              value={data.winRate ? `${data.winRate}%` : '—'}
+              value={data.closedTrades > 0 ? `${data.winRate}%` : '—'}
               sub={`${data.winCount}W / ${data.lossCount}L`}
               color={data.winRate >= 50 ? '#00d4aa' : '#ff4757'}
             />
@@ -299,18 +352,6 @@ export default function Analytics() {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, color }) {
-  return (
-    <div className="stat-card">
-      <p className="stat-label">{label}</p>
-      <p className="stat-value" style={{ color: color || 'var(--text-primary)', fontSize: '1.5rem', fontFamily: 'monospace' }}>
-        {value}
-      </p>
-      {sub && <p className="stat-sub">{sub}</p>}
     </div>
   );
 }

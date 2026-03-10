@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { addTrade, calculatePnl } from '../utils/storage.js';
 
 const STRATEGIES = [
   'Breakout', 'Pullback', 'Trend Following', 'Reversal', 'Scalp',
@@ -8,9 +8,7 @@ const STRATEGIES = [
 ];
 
 export default function LogTrade() {
-  const { authFetch } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
@@ -28,35 +26,6 @@ export default function LogTrade() {
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const payload = {
-        ...form,
-        symbol: form.symbol.toUpperCase(),
-        entry_price: parseFloat(form.entry_price),
-        exit_price: form.exit_price ? parseFloat(form.exit_price) : undefined,
-        quantity: parseFloat(form.quantity),
-        exit_date: form.exit_date || undefined
-      };
-
-      const res = await authFetch('/api/trades', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create trade');
-      navigate(`/trades/${data.id}`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Auto-set status based on exit_price
   const handleExitPrice = (val) => {
     set('exit_price', val);
     if (val) set('status', 'CLOSED');
@@ -73,6 +42,45 @@ export default function LogTrade() {
       previewPnl = form.direction === 'LONG' ? (xp - ep) * qty : (ep - xp) * qty;
     }
   }
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const entryPrice = parseFloat(form.entry_price);
+    const exitPrice = form.exit_price ? parseFloat(form.exit_price) : null;
+    const quantity = parseFloat(form.quantity);
+
+    if (isNaN(entryPrice) || isNaN(quantity)) {
+      setError('Invalid entry price or quantity.');
+      return;
+    }
+
+    const { pnl, pnl_percent } = calculatePnl(form.direction, entryPrice, exitPrice, quantity);
+
+    const status = exitPrice ? 'CLOSED' : form.status;
+
+    const trade = {
+      id: Date.now().toString(),
+      symbol: form.symbol.toUpperCase(),
+      direction: form.direction,
+      entry_price: entryPrice,
+      exit_price: exitPrice,
+      quantity,
+      entry_date: form.entry_date,
+      exit_date: form.exit_date || null,
+      status,
+      strategy: form.strategy,
+      notes: form.notes,
+      pnl,
+      pnl_percent,
+      images: [],
+      created_at: new Date().toISOString()
+    };
+
+    addTrade(trade);
+    navigate(`/trades/${trade.id}`);
+  };
 
   return (
     <div className="page-container" style={{ maxWidth: 720 }}>
@@ -108,7 +116,7 @@ export default function LogTrade() {
                     key={dir}
                     type="button"
                     onClick={() => set('direction', dir)}
-                    className={`btn flex-1`}
+                    className="btn flex-1"
                     style={{
                       justifyContent: 'center',
                       background: form.direction === dir
@@ -268,10 +276,9 @@ export default function LogTrade() {
           <button
             type="submit"
             className="btn btn-primary btn-lg"
-            disabled={loading}
             style={{ flex: 1, justifyContent: 'center' }}
           >
-            {loading ? 'Saving...' : 'Log Trade'}
+            Log Trade
           </button>
         </div>
       </form>

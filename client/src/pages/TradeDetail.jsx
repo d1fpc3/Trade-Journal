@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { getTradeById, updateTrade, deleteTrade, calculatePnl } from '../utils/storage.js';
 
 const STRATEGIES = [
   'Breakout', 'Pullback', 'Trend Following', 'Reversal', 'Scalp',
@@ -21,66 +21,66 @@ function formatDate(str) {
 export default function TradeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { authFetch, token } = useAuth();
   const fileRef = useRef();
 
   const [trade, setTrade] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const [form, setForm] = useState({});
 
-  const fetchTrade = async () => {
-    try {
-      const res = await authFetch(`/api/trades/${id}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setTrade(data);
-      setForm({
-        symbol: data.symbol,
-        direction: data.direction,
-        entry_price: data.entry_price,
-        exit_price: data.exit_price ?? '',
-        quantity: data.quantity,
-        entry_date: data.entry_date,
-        exit_date: data.exit_date ?? '',
-        status: data.status,
-        strategy: data.strategy ?? '',
-        notes: data.notes ?? ''
-      });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    const t = getTradeById(id);
+    if (!t) {
+      setError('Trade not found.');
+      return;
     }
-  };
+    setTrade(t);
+    setForm({
+      symbol: t.symbol,
+      direction: t.direction,
+      entry_price: t.entry_price,
+      exit_price: t.exit_price ?? '',
+      quantity: t.quantity,
+      entry_date: t.entry_date,
+      exit_date: t.exit_date ?? '',
+      status: t.status,
+      strategy: t.strategy ?? '',
+      notes: t.notes ?? ''
+    });
+  }, [id]);
 
-  useEffect(() => { fetchTrade(); }, [id]);
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setSaving(true);
     setError('');
     setSuccess('');
     try {
-      const payload = {
-        ...form,
-        entry_price: parseFloat(form.entry_price),
-        exit_price: form.exit_price ? parseFloat(form.exit_price) : null,
-        quantity: parseFloat(form.quantity),
-        exit_date: form.exit_date || null
+      const entryPrice = parseFloat(form.entry_price);
+      const exitPrice = form.exit_price ? parseFloat(form.exit_price) : null;
+      const quantity = parseFloat(form.quantity);
+      const { pnl, pnl_percent } = calculatePnl(form.direction, entryPrice, exitPrice, quantity);
+
+      const updates = {
+        symbol: form.symbol.toUpperCase(),
+        direction: form.direction,
+        entry_price: entryPrice,
+        exit_price: exitPrice,
+        quantity,
+        entry_date: form.entry_date,
+        exit_date: form.exit_date || null,
+        status: form.status,
+        strategy: form.strategy,
+        notes: form.notes,
+        pnl,
+        pnl_percent
       };
-      const res = await authFetch(`/api/trades/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setTrade(data);
+
+      const updated = updateTrade(id, updates);
+      setTrade(updated);
       setEditing(false);
       setSuccess('Trade updated successfully');
       setTimeout(() => setSuccess(''), 3000);
@@ -91,58 +91,44 @@ export default function TradeDetail() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!confirm('Are you sure you want to delete this trade? This cannot be undone.')) return;
-    setDeleting(true);
-    try {
-      const res = await authFetch(`/api/trades/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-      navigate('/trades');
-    } catch (err) {
-      setError(err.message);
-      setDeleting(false);
-    }
+    deleteTrade(id);
+    navigate('/trades');
   };
 
-  const handleUpload = async (e) => {
-    const files = e.target.files;
+  const handleUpload = (e) => {
+    const files = Array.from(e.target.files);
     if (!files.length) return;
-    setUploading(true);
-    setError('');
-    try {
-      const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('images', f));
-      const res = await fetch(`/api/trades/${id}/images`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      await fetchTrade();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target.result;
+        const imageId = Date.now().toString() + Math.random().toString(36).slice(2);
+        const currentTrade = getTradeById(id);
+        if (!currentTrade) return;
+        const images = [...(currentTrade.images || []), { id: imageId, data: base64, name: file.name }];
+        const updated = updateTrade(id, { images });
+        setTrade(updated);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  const handleDeleteImage = async (imageId) => {
+  const handleDeleteImage = (imageId) => {
     if (!confirm('Delete this image?')) return;
-    try {
-      const res = await authFetch(`/api/trades/${id}/images/${imageId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete image');
-      setTrade(t => ({ ...t, images: t.images.filter(i => i.id !== imageId) }));
-    } catch (err) {
-      setError(err.message);
-    }
+    const currentTrade = getTradeById(id);
+    if (!currentTrade) return;
+    const images = (currentTrade.images || []).filter(img => img.id !== imageId);
+    const updated = updateTrade(id, { images });
+    setTrade(updated);
   };
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
-
-  if (loading) return <div className="page-container"><span className="spinner" /></div>;
-  if (!trade && error) return (
+  if (!trade && !error) return <div className="page-container"><span className="spinner" /></div>;
+  if (!trade) return (
     <div className="page-container">
       <div className="error-msg">{error}</div>
       <Link to="/trades" className="btn btn-secondary" style={{ marginTop: 12 }}>← Back to History</Link>
@@ -177,9 +163,7 @@ export default function TradeDetail() {
           {!editing && (
             <>
               <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit</button>
-              <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
+              <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
             </>
           )}
           {editing && (
@@ -220,7 +204,7 @@ export default function TradeDetail() {
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>RETURN</p>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color: pnlColor, fontFamily: 'monospace' }}>
-                {trade.pnl_percent >= 0 ? '+' : ''}{trade.pnl_percent.toFixed(2)}%
+                {trade.pnl_percent >= 0 ? '+' : ''}{Number(trade.pnl_percent).toFixed(2)}%
               </p>
             </div>
           )}
@@ -289,8 +273,8 @@ export default function TradeDetail() {
           ) : (
             <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 8px' }}>
               {[
-                { label: 'Entry Price', value: `$${trade.entry_price.toLocaleString()}`, mono: true },
-                { label: 'Exit Price', value: trade.exit_price ? `$${trade.exit_price.toLocaleString()}` : '—', mono: true },
+                { label: 'Entry Price', value: `$${Number(trade.entry_price).toLocaleString()}`, mono: true },
+                { label: 'Exit Price', value: trade.exit_price ? `$${Number(trade.exit_price).toLocaleString()}` : '—', mono: true },
                 { label: 'Quantity', value: trade.quantity },
                 { label: 'Strategy', value: trade.strategy || '—' },
                 { label: 'Entry Date', value: formatDate(trade.entry_date) },
@@ -329,9 +313,8 @@ export default function TradeDetail() {
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => fileRef.current?.click()}
-              disabled={uploading}
             >
-              {uploading ? 'Uploading...' : '+ Upload'}
+              + Upload
             </button>
             <input
               ref={fileRef}
@@ -347,9 +330,9 @@ export default function TradeDetail() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
               {trade.images.map(img => (
                 <div key={img.id} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-                  <a href={`/uploads/${img.filename}`} target="_blank" rel="noopener noreferrer">
+                  <a href={img.data} target="_blank" rel="noopener noreferrer">
                     <img
-                      src={`/uploads/${img.filename}`}
+                      src={img.data}
                       alt="Trade screenshot"
                       style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }}
                     />
@@ -378,7 +361,7 @@ export default function TradeDetail() {
             >
               <p style={{ fontSize: '2rem', marginBottom: 8 }}>🖼️</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Click to upload screenshots</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>PNG, JPG, GIF up to 10MB</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>PNG, JPG, GIF</p>
             </div>
           )}
         </div>

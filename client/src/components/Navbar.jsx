@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Navbar() {
-  const { username, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -66,18 +66,8 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* User */}
+        {/* Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            fontSize: '0.8rem',
-            color: 'var(--text-muted)',
-            padding: '4px 10px',
-            background: 'var(--bg-input)',
-            borderRadius: 20,
-            border: '1px solid var(--border)'
-          }}>
-            {username}
-          </span>
           <button
             onClick={handleLogout}
             className="btn btn-ghost btn-sm"

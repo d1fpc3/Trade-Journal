@@ -3,31 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      login(data.token, data.username);
+    const ok = login(password);
+    if (ok) {
       navigate('/');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    } else {
+      setError('Incorrect password. Try trader123.');
     }
   };
 
@@ -74,20 +62,6 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                type="text"
-                className="form-input"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="trader"
-                required
-                autoFocus
-                autoComplete="username"
-              />
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Password</label>
               <input
                 type="password"
@@ -96,6 +70,7 @@ export default function Login() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoFocus
                 autoComplete="current-password"
               />
             </div>
@@ -103,10 +78,9 @@ export default function Login() {
             <button
               type="submit"
               className="btn btn-primary btn-lg"
-              disabled={loading}
               style={{ marginTop: 8, justifyContent: 'center' }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              Sign In
             </button>
           </form>
 
@@ -120,7 +94,7 @@ export default function Login() {
             color: 'var(--text-muted)',
             textAlign: 'center'
           }}>
-            Default: <strong style={{ color: 'var(--text-secondary)' }}>trader</strong> / <strong style={{ color: 'var(--text-secondary)' }}>trader123</strong>
+            Default password: <strong style={{ color: 'var(--text-secondary)' }}>trader123</strong>
           </div>
         </div>
       </div>

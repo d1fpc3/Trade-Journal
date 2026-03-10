@@ -9,8 +9,7 @@ import TradeDetail from './pages/TradeDetail.jsx';
 import Analytics from './pages/Analytics.jsx';
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="flex-center" style={{ minHeight: '100vh' }}><span className="spinner" /></div>;
+  const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
     <>
@@ -21,8 +20,7 @@ function ProtectedRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="flex-center" style={{ minHeight: '100vh' }}><span className="spinner" /></div>;
+  const { isAuthenticated } = useAuth();
   if (isAuthenticated) return <Navigate to="/" replace />;
   return children;
 }
@@ -45,7 +43,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Trade-Journal">
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
