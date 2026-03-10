@@ -19,7 +19,6 @@ export default function TradeHistory() {
   const [filters, setFilters] = useState({
     symbol: '',
     direction: '',
-    status: '',
     from_date: '',
     to_date: ''
   });
@@ -31,9 +30,9 @@ export default function TradeHistory() {
   const filtered = allTrades.filter(t => {
     if (filters.symbol && !t.symbol.toUpperCase().includes(filters.symbol.toUpperCase())) return false;
     if (filters.direction && t.direction !== filters.direction) return false;
-    if (filters.status && t.status !== filters.status) return false;
-    if (filters.from_date && t.entry_date < filters.from_date) return false;
-    if (filters.to_date && t.entry_date > filters.to_date) return false;
+    const tradeDate = t.date ?? t.entry_date ?? '';
+    if (filters.from_date && tradeDate < filters.from_date) return false;
+    if (filters.to_date && tradeDate > filters.to_date) return false;
     return true;
   });
 
@@ -47,7 +46,7 @@ export default function TradeHistory() {
   };
 
   const clearFilters = () => {
-    setFilters({ symbol: '', direction: '', status: '', from_date: '', to_date: '' });
+    setFilters({ symbol: '', direction: '', from_date: '', to_date: '' });
   };
 
   return (
@@ -82,18 +81,6 @@ export default function TradeHistory() {
               <option value="">All</option>
               <option value="LONG">Long</option>
               <option value="SHORT">Short</option>
-            </select>
-          </div>
-          <div className="form-group" style={{ minWidth: 110 }}>
-            <label className="form-label">Status</label>
-            <select
-              className="form-select"
-              value={filters.status}
-              onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
-            >
-              <option value="">All</option>
-              <option value="OPEN">Open</option>
-              <option value="CLOSED">Closed</option>
             </select>
           </div>
           <div className="form-group" style={{ minWidth: 140 }}>
@@ -139,13 +126,13 @@ export default function TradeHistory() {
             </strong>
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Open: <strong style={{ color: 'var(--blue)' }}>
-              {filtered.filter(t => t.status === 'OPEN').length}
+            Wins: <strong style={{ color: 'var(--green)' }}>
+              {filtered.filter(t => t.pnl > 0).length}
             </strong>
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Closed: <strong style={{ color: 'var(--text-secondary)' }}>
-              {filtered.filter(t => t.status === 'CLOSED').length}
+            Losses: <strong style={{ color: 'var(--red)' }}>
+              {filtered.filter(t => t.pnl < 0).length}
             </strong>
           </span>
         </div>
@@ -171,9 +158,9 @@ export default function TradeHistory() {
                   <th>Qty</th>
                   <th>P&L</th>
                   <th>P&L %</th>
-                  <th>Strategy</th>
-                  <th>Status</th>
-                  <th>Entry Date</th>
+                  <th>Session</th>
+                  <th>TF</th>
+                  <th>Date</th>
                   <th></th>
                 </tr>
               </thead>
@@ -200,17 +187,13 @@ export default function TradeHistory() {
                       {trade.pnl_percent != null ? `${trade.pnl_percent >= 0 ? '+' : ''}${trade.pnl_percent.toFixed(2)}%` : '—'}
                     </td>
                     <td>
-                      {trade.strategy
-                        ? <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'var(--bg-input)', padding: '2px 7px', borderRadius: 4 }}>{trade.strategy}</span>
+                      {trade.session
+                        ? <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'var(--bg-input)', padding: '2px 7px', borderRadius: 4 }}>{trade.session}</span>
                         : <span className="text-muted">—</span>
                       }
                     </td>
-                    <td>
-                      <span className={`badge ${trade.status === 'OPEN' ? 'badge-blue' : 'badge-muted'}`}>
-                        {trade.status}
-                      </span>
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(trade.entry_date)}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{trade.timeframe || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(trade.date ?? trade.entry_date)}</td>
                     <td onClick={e => e.stopPropagation()}>
                       <button
                         className="btn btn-danger btn-sm"

@@ -14,23 +14,23 @@ function formatDate(str) {
 }
 
 function computeAnalytics(trades) {
-  const closed = trades.filter(t => t.status === 'CLOSED' && t.pnl !== null);
-  const open = trades.filter(t => t.status === 'OPEN');
-  const wins = closed.filter(t => t.pnl > 0);
-  const losses = closed.filter(t => t.pnl <= 0);
-  const totalPnl = closed.reduce((s, t) => s + t.pnl, 0);
-  const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const withPnl = trades.filter(t => t.pnl !== null);
+  const wins = withPnl.filter(t => t.pnl > 0);
+  const losses = withPnl.filter(t => t.pnl <= 0);
+  const totalPnl = withPnl.reduce((s, t) => s + t.pnl, 0);
+  const todayPnl = withPnl.filter(t => (t.date ?? t.entry_date ?? '').slice(0, 10) === today).reduce((s, t) => s + t.pnl, 0);
+  const winRate = withPnl.length > 0 ? Math.round((wins.length / withPnl.length) * 100) : 0;
   const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : null;
   const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : null;
-  const bestTrade = closed.length > 0 ? closed.reduce((best, t) => t.pnl > best.pnl ? t : best, closed[0]) : null;
-  const worstTrade = closed.length > 0 ? closed.reduce((worst, t) => t.pnl < worst.pnl ? t : worst, closed[0]) : null;
+  const bestTrade = withPnl.length > 0 ? withPnl.reduce((best, t) => t.pnl > best.pnl ? t : best, withPnl[0]) : null;
+  const worstTrade = withPnl.length > 0 ? withPnl.reduce((worst, t) => t.pnl < worst.pnl ? t : worst, withPnl[0]) : null;
   return {
     totalPnl,
+    todayPnl,
     winRate,
     winCount: wins.length,
     lossCount: losses.length,
-    openTrades: open.length,
-    closedTrades: closed.length,
     totalTrades: trades.length,
     avgWin,
     avgLoss,
@@ -80,15 +80,15 @@ export default function Dashboard() {
         />
         <StatCard
           label="Win Rate"
-          value={analytics.closedTrades > 0 ? `${analytics.winRate}%` : '—'}
+          value={analytics.totalTrades > 0 ? `${analytics.winRate}%` : '—'}
           valueColor={analytics.winRate >= 50 ? 'var(--green)' : 'var(--red)'}
           sub={`${analytics.winCount}W / ${analytics.lossCount}L`}
         />
         <StatCard
-          label="Open Trades"
-          value={analytics.openTrades}
-          valueColor="var(--blue)"
-          sub="Currently active"
+          label="Today's P&L"
+          value={formatPnl(analytics.todayPnl)}
+          valueColor={analytics.todayPnl >= 0 ? 'var(--green)' : 'var(--red)'}
+          sub="Current session"
         />
         <StatCard
           label="Total Trades"
@@ -124,7 +124,7 @@ export default function Dashboard() {
                   <th>Exit</th>
                   <th>Qty</th>
                   <th>P&L</th>
-                  <th>Status</th>
+                  <th>Session</th>
                   <th>Date</th>
                 </tr>
               </thead>
@@ -143,12 +143,8 @@ export default function Dashboard() {
                     <td className={`font-mono ${trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : ''}`}>
                       {formatPnl(trade.pnl)}
                     </td>
-                    <td>
-                      <span className={`badge ${trade.status === 'OPEN' ? 'badge-blue' : 'badge-muted'}`}>
-                        {trade.status}
-                      </span>
-                    </td>
-                    <td>{formatDate(trade.entry_date)}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{trade.session || '—'}</td>
+                    <td>{formatDate(trade.date ?? trade.entry_date)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -167,7 +163,7 @@ export default function Dashboard() {
                 {formatPnl(analytics.bestTrade.pnl)}
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
-                {analytics.bestTrade.symbol} — {formatDate(analytics.bestTrade.entry_date)}
+                {analytics.bestTrade.symbol} — {formatDate(analytics.bestTrade.date ?? analytics.bestTrade.entry_date)}
               </p>
             </div>
           )}
@@ -178,7 +174,7 @@ export default function Dashboard() {
                 {formatPnl(analytics.worstTrade.pnl)}
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
-                {analytics.worstTrade.symbol} — {formatDate(analytics.worstTrade.entry_date)}
+                {analytics.worstTrade.symbol} — {formatDate(analytics.worstTrade.date ?? analytics.worstTrade.entry_date)}
               </p>
             </div>
           )}

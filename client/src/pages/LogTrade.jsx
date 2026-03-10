@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addTrade, calculatePnl } from '../utils/storage.js';
 
-const STRATEGIES = [
-  'Breakout', 'Pullback', 'Trend Following', 'Reversal', 'Scalp',
-  'Swing', 'News Play', 'Gap Fill', 'Support/Resistance', 'Other'
-];
+const SESSIONS = ['London', 'New York', 'Asian', 'London/NY Overlap'];
+const TIMEFRAMES = ['1m', '2m', '5m', '15m', '30m', '1H'];
 
 export default function LogTrade() {
   const navigate = useNavigate();
@@ -17,20 +15,14 @@ export default function LogTrade() {
     entry_price: '',
     exit_price: '',
     quantity: '',
-    entry_date: new Date().toISOString().slice(0, 10),
-    exit_date: '',
-    status: 'OPEN',
-    strategy: '',
+    date: new Date().toISOString().slice(0, 10),
+    session: '',
+    timeframe: '',
+    setup: '',
     notes: ''
   });
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
-
-  const handleExitPrice = (val) => {
-    set('exit_price', val);
-    if (val) set('status', 'CLOSED');
-    else set('status', 'OPEN');
-  };
 
   // Preview P&L
   let previewPnl = null;
@@ -58,8 +50,6 @@ export default function LogTrade() {
 
     const { pnl, pnl_percent } = calculatePnl(form.direction, entryPrice, exitPrice, quantity);
 
-    const status = exitPrice ? 'CLOSED' : form.status;
-
     const trade = {
       id: Date.now().toString(),
       symbol: form.symbol.toUpperCase(),
@@ -67,10 +57,10 @@ export default function LogTrade() {
       entry_price: entryPrice,
       exit_price: exitPrice,
       quantity,
-      entry_date: form.entry_date,
-      exit_date: form.exit_date || null,
-      status,
-      strategy: form.strategy,
+      date: form.date,
+      session: form.session,
+      timeframe: form.timeframe,
+      setup: form.setup,
       notes: form.notes,
       pnl,
       pnl_percent,
@@ -158,8 +148,8 @@ export default function LogTrade() {
                 type="number"
                 className="form-input"
                 value={form.exit_price}
-                onChange={e => handleExitPrice(e.target.value)}
-                placeholder="0.00 (optional)"
+                onChange={e => set('exit_price', e.target.value)}
+                placeholder="0.00"
                 step="any"
                 min="0"
               />
@@ -180,53 +170,51 @@ export default function LogTrade() {
             </div>
           </div>
 
-          <div className="grid-2" style={{ gap: 16, marginBottom: 16 }}>
+          <div className="grid-3" style={{ gap: 16, marginBottom: 16 }}>
             <div className="form-group">
-              <label className="form-label">Entry Date *</label>
+              <label className="form-label">Date *</label>
               <input
                 type="date"
                 className="form-input"
-                value={form.entry_date}
-                onChange={e => set('entry_date', e.target.value)}
+                value={form.date}
+                onChange={e => set('date', e.target.value)}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Exit Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={form.exit_date}
-                onChange={e => set('exit_date', e.target.value)}
-              />
+              <label className="form-label">Session</label>
+              <select
+                className="form-select"
+                value={form.session}
+                onChange={e => set('session', e.target.value)}
+              >
+                <option value="">— Select —</option>
+                {SESSIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Timeframe</label>
+              <select
+                className="form-select"
+                value={form.timeframe}
+                onChange={e => set('timeframe', e.target.value)}
+              >
+                <option value="">— Select —</option>
+                {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 
-          <div className="grid-2" style={{ gap: 16, marginBottom: 16 }}>
-            <div className="form-group">
-              <label className="form-label">Status</label>
-              <select
-                className="form-select"
-                value={form.status}
-                onChange={e => set('status', e.target.value)}
-              >
-                <option value="OPEN">Open</option>
-                <option value="CLOSED">Closed</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Strategy / Setup</label>
-              <select
-                className="form-select"
-                value={form.strategy}
-                onChange={e => set('strategy', e.target.value)}
-              >
-                <option value="">— Select strategy —</option>
-                {STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <label className="form-label">Setup</label>
+            <input
+              className="form-input"
+              value={form.setup}
+              onChange={e => set('setup', e.target.value)}
+              placeholder="e.g. BOS + Order Block retest, FVG fill, VWAP rejection..."
+            />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
@@ -235,7 +223,7 @@ export default function LogTrade() {
               className="form-textarea"
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
-              placeholder="Setup rationale, market conditions, lessons learned..."
+              placeholder="What did you see? Execution thoughts, lessons learned..."
               rows={3}
             />
           </div>

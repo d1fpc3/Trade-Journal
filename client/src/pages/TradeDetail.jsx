@@ -2,10 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getTradeById, updateTrade, deleteTrade, calculatePnl } from '../utils/storage.js';
 
-const STRATEGIES = [
-  'Breakout', 'Pullback', 'Trend Following', 'Reversal', 'Scalp',
-  'Swing', 'News Play', 'Gap Fill', 'Support/Resistance', 'Other'
-];
+const SESSIONS = ['London', 'New York', 'Asian', 'London/NY Overlap'];
+const TIMEFRAMES = ['1m', '2m', '5m', '15m', '30m', '1H'];
 
 function formatPnl(val) {
   if (val === null || val === undefined) return '—';
@@ -44,10 +42,10 @@ export default function TradeDetail() {
       entry_price: t.entry_price,
       exit_price: t.exit_price ?? '',
       quantity: t.quantity,
-      entry_date: t.entry_date,
-      exit_date: t.exit_date ?? '',
-      status: t.status,
-      strategy: t.strategy ?? '',
+      date: t.date ?? t.entry_date ?? '',
+      session: t.session ?? '',
+      timeframe: t.timeframe ?? '',
+      setup: t.setup ?? '',
       notes: t.notes ?? ''
     });
   }, [id]);
@@ -70,10 +68,10 @@ export default function TradeDetail() {
         entry_price: entryPrice,
         exit_price: exitPrice,
         quantity,
-        entry_date: form.entry_date,
-        exit_date: form.exit_date || null,
-        status: form.status,
-        strategy: form.strategy,
+        date: form.date,
+        session: form.session,
+        timeframe: form.timeframe,
+        setup: form.setup,
         notes: form.notes,
         pnl,
         pnl_percent
@@ -149,12 +147,10 @@ export default function TradeDetail() {
               <span className={`badge ${trade.direction === 'LONG' ? 'badge-green' : 'badge-red'}`}>
                 {trade.direction}
               </span>
-              <span className={`badge ${trade.status === 'OPEN' ? 'badge-blue' : 'badge-muted'}`}>
-                {trade.status}
-              </span>
+              {trade.session && <span className="badge badge-muted">{trade.session}</span>}
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 2 }}>
-              Trade #{trade.id} • {formatDate(trade.entry_date)}
+              {formatDate(trade.date ?? trade.entry_date)}{trade.timeframe ? ` • ${trade.timeframe}` : ''}
             </p>
           </div>
         </div>
@@ -244,26 +240,26 @@ export default function TradeDetail() {
                 <input type="number" className="form-input" value={form.quantity} onChange={e => set('quantity', e.target.value)} step="any" />
               </div>
               <div className="form-group">
-                <label className="form-label">Entry Date</label>
-                <input type="date" className="form-input" value={form.entry_date} onChange={e => set('entry_date', e.target.value)} />
+                <label className="form-label">Date</label>
+                <input type="date" className="form-input" value={form.date} onChange={e => set('date', e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">Exit Date</label>
-                <input type="date" className="form-input" value={form.exit_date} onChange={e => set('exit_date', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select className="form-select" value={form.status} onChange={e => set('status', e.target.value)}>
-                  <option value="OPEN">Open</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Strategy</label>
-                <select className="form-select" value={form.strategy} onChange={e => set('strategy', e.target.value)}>
+                <label className="form-label">Session</label>
+                <select className="form-select" value={form.session} onChange={e => set('session', e.target.value)}>
                   <option value="">None</option>
-                  {STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {SESSIONS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Timeframe</label>
+                <select className="form-select" value={form.timeframe} onChange={e => set('timeframe', e.target.value)}>
+                  <option value="">None</option>
+                  {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Setup</label>
+                <input className="form-input" value={form.setup} onChange={e => set('setup', e.target.value)} placeholder="e.g. BOS + OB retest" />
               </div>
               <div className="form-group">
                 <label className="form-label">Notes</label>
@@ -276,10 +272,9 @@ export default function TradeDetail() {
                 { label: 'Entry Price', value: `$${Number(trade.entry_price).toLocaleString()}`, mono: true },
                 { label: 'Exit Price', value: trade.exit_price ? `$${Number(trade.exit_price).toLocaleString()}` : '—', mono: true },
                 { label: 'Quantity', value: trade.quantity },
-                { label: 'Strategy', value: trade.strategy || '—' },
-                { label: 'Entry Date', value: formatDate(trade.entry_date) },
-                { label: 'Exit Date', value: formatDate(trade.exit_date) },
-                { label: 'Created', value: formatDate(trade.created_at) }
+                { label: 'Date', value: formatDate(trade.date ?? trade.entry_date) },
+                { label: 'Session', value: trade.session || '—' },
+                { label: 'Timeframe', value: trade.timeframe || '—' },
               ].map(row => (
                 <div key={row.label}>
                   <dt style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
@@ -290,14 +285,16 @@ export default function TradeDetail() {
                   </dd>
                 </div>
               ))}
+              {trade.setup && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <dt style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Setup</dt>
+                  <dd style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{trade.setup}</dd>
+                </div>
+              )}
               {trade.notes && (
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <dt style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
-                    Notes
-                  </dt>
-                  <dd style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {trade.notes}
-                  </dd>
+                  <dt style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Notes</dt>
+                  <dd style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{trade.notes}</dd>
                 </div>
               )}
             </dl>
