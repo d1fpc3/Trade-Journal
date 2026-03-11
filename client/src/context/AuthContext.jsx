@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+const DEFAULT_USERNAME = 'trader';
 const DEFAULT_PASSWORD = 'trader123';
 const AUTH_KEY = 'tj_logged_in';
 
@@ -10,9 +11,10 @@ export function AuthProvider({ children }) {
     return localStorage.getItem(AUTH_KEY) === 'true';
   });
 
-  const login = (password) => {
-    const stored = localStorage.getItem('tj_password') || DEFAULT_PASSWORD;
-    if (password === stored) {
+  const login = (username, password) => {
+    const storedPw = localStorage.getItem('tj_password') || DEFAULT_PASSWORD;
+    const storedUser = localStorage.getItem('tj_username') || DEFAULT_USERNAME;
+    if (username === storedUser && password === storedPw) {
       localStorage.setItem(AUTH_KEY, 'true');
       setIsAuthenticated(true);
       return true;
