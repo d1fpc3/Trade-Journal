@@ -26,6 +26,20 @@ function computeAnalytics(trades) {
   const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : null;
   const bestTrade = withPnl.length > 0 ? withPnl.reduce((best, t) => t.pnl > best.pnl ? t : best, withPnl[0]) : null;
   const worstTrade = withPnl.length > 0 ? withPnl.reduce((worst, t) => t.pnl < worst.pnl ? t : worst, withPnl[0]) : null;
+
+  // Current streak
+  let currentStreak = { count: 0, type: null };
+  if (withPnl.length > 0) {
+    const recent = [...withPnl].sort((a, b) => (b.date ?? b.entry_date ?? '').localeCompare(a.date ?? a.entry_date ?? ''));
+    const type = recent[0].pnl > 0 ? 'W' : 'L';
+    let count = 0;
+    for (const t of recent) {
+      if ((t.pnl > 0) === (type === 'W')) count++;
+      else break;
+    }
+    currentStreak = { count, type };
+  }
+
   return {
     totalPnl,
     todayPnl,
@@ -36,7 +50,8 @@ function computeAnalytics(trades) {
     avgWin,
     avgLoss,
     bestTrade,
-    worstTrade
+    worstTrade,
+    currentStreak
   };
 }
 
@@ -138,7 +153,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats grid */}
-      <div className="grid-4" style={{ marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 16, marginBottom: 24 }}>
         <StatCard
           delay="0.05s"
           label="Total P&L"
@@ -169,6 +184,16 @@ export default function Dashboard() {
           value={analytics.avgWin ? formatPnl(analytics.avgWin) : '—'}
           valueColor="var(--green)"
           sub={`Avg loss: ${analytics.avgLoss ? formatPnl(analytics.avgLoss) : '—'}`}
+        />
+        <StatCard
+          delay="0.33s"
+          label="Current Streak"
+          value={analytics.currentStreak.count > 0
+            ? `${analytics.currentStreak.count} ${analytics.currentStreak.type === 'W' ? 'Win' : 'Loss'}${analytics.currentStreak.count !== 1 ? 's' : ''}`
+            : '—'}
+          valueColor={analytics.currentStreak.type === 'W' ? 'var(--green)' : analytics.currentStreak.type === 'L' ? 'var(--red)' : 'var(--text-muted)'}
+          glow={analytics.currentStreak.count >= 3 ? (analytics.currentStreak.type === 'W' ? 'green' : 'red') : undefined}
+          sub="in a row"
         />
       </div>
 

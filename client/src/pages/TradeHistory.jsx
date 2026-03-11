@@ -19,6 +19,8 @@ export default function TradeHistory() {
   const [filters, setFilters] = useState({
     symbol: '',
     direction: '',
+    grade: '',
+    session: '',
     from_date: '',
     to_date: ''
   });
@@ -31,6 +33,8 @@ export default function TradeHistory() {
     .filter(t => {
       if (filters.symbol && !t.symbol.toUpperCase().includes(filters.symbol.toUpperCase())) return false;
       if (filters.direction && t.direction !== filters.direction) return false;
+      if (filters.grade && t.grade !== filters.grade) return false;
+      if (filters.session && t.session !== filters.session) return false;
       const tradeDate = t.date ?? t.entry_date ?? '';
       if (filters.from_date && tradeDate < filters.from_date) return false;
       if (filters.to_date && tradeDate > filters.to_date) return false;
@@ -52,7 +56,7 @@ export default function TradeHistory() {
   };
 
   const clearFilters = () => {
-    setFilters({ symbol: '', direction: '', from_date: '', to_date: '' });
+    setFilters({ symbol: '', direction: '', grade: '', session: '', from_date: '', to_date: '' });
   };
 
   return (
@@ -87,6 +91,33 @@ export default function TradeHistory() {
               <option value="">All</option>
               <option value="LONG">Long</option>
               <option value="SHORT">Short</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ minWidth: 90 }}>
+            <label className="form-label">Grade</label>
+            <select
+              className="form-select"
+              value={filters.grade}
+              onChange={e => setFilters(f => ({ ...f, grade: e.target.value }))}
+            >
+              <option value="">All</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ minWidth: 150 }}>
+            <label className="form-label">Session</label>
+            <select
+              className="form-select"
+              value={filters.session}
+              onChange={e => setFilters(f => ({ ...f, session: e.target.value }))}
+            >
+              <option value="">All</option>
+              <option value="London">London</option>
+              <option value="New York">New York</option>
+              <option value="Asian">Asian</option>
+              <option value="London/NY Overlap">London/NY Overlap</option>
             </select>
           </div>
           <div className="form-group" style={{ minWidth: 140 }}>

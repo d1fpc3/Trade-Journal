@@ -103,12 +103,41 @@ function computeAnalytics(trades) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
+  // P&L by day of week
+  const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const DOW_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dowMap = {};
+  withPnl.forEach(t => {
+    const dayName = DOW_NAMES[new Date(t.date ?? t.entry_date).getDay()];
+    if (!dowMap[dayName]) dowMap[dayName] = { pnl: 0, count: 0 };
+    dowMap[dayName].pnl += t.pnl;
+    dowMap[dayName].count++;
+  });
+  const pnlByDow = DOW_ORDER
+    .map(d => ({ day: d, pnl: parseFloat((dowMap[d]?.pnl || 0).toFixed(2)), count: dowMap[d]?.count || 0 }))
+    .filter(d => d.count > 0);
+
+  // Win rate by setup (min 2 trades)
+  const setupMap2 = {};
+  withPnl.forEach(t => {
+    if (!t.setup) return;
+    if (!setupMap2[t.setup]) setupMap2[t.setup] = { count: 0, wins: 0, pnl: 0 };
+    setupMap2[t.setup].count++;
+    if (t.pnl > 0) setupMap2[t.setup].wins++;
+    setupMap2[t.setup].pnl += t.pnl;
+  });
+  const winRateBySetup = Object.entries(setupMap2)
+    .filter(([, v]) => v.count >= 2)
+    .map(([setup, v]) => ({ setup, winRate: Math.round((v.wins / v.count) * 100), count: v.count, pnl: parseFloat(v.pnl.toFixed(2)) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
   return {
     totalPnl, winRate, winCount: wins.length, lossCount: losses.length,
     totalTrades: trades.length, withPnlCount: withPnl.length,
     avgWin, avgLoss, profitFactor, bestTrade, worstTrade,
     maxWinStreak, maxLossStreak, avgRR, maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
-    equityCurve, pnlBySymbol, pnlBySession, pnlByGrade, mistakeFreq
+    equityCurve, pnlBySymbol, pnlBySession, pnlByGrade, mistakeFreq, pnlByDow, winRateBySetup
   };
 }
 
@@ -366,6 +395,54 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* ── Day of Week + Setup Win Rate ──────────── */}
+      <div className="grid-2" style={{ marginBottom: 20 }}>
+        {data.pnlByDow.length > 0 && (
+          <div className="card animate-fade-up delay-5">
+            <h3 style={{ marginBottom: 20 }}>P&L by Day of Week</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={data.pnlByDow} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(28,28,46,0.8)" />
+                <XAxis dataKey="day" tick={{ fill: '#8888b0', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#44446a', fontSize: 10 }} axisLine={false} tickLine={false}
+                  tickFormatter={v => `$${v}`} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="pnl" radius={[5, 5, 0, 0]}>
+                  {data.pnlByDow.map((e, i) => (
+                    <Cell key={i} fill={e.pnl >= 0 ? '#05d890' : '#ff3d5a'} opacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {data.winRateBySetup.length > 0 && (
+          <div className="card animate-fade-up delay-5">
+            <h3 style={{ marginBottom: 20 }}>Win Rate by Setup</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={data.winRateBySetup} layout="vertical"
+                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(28,28,46,0.8)" horizontal={false} />
+                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#44446a', fontSize: 10 }}
+                  axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="setup" width={120}
+                  tick={{ fill: '#8888b0', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: '#0f0f18', border: '1px solid #252540', borderRadius: 8, fontSize: '0.8rem' }}
+                  formatter={(v, name) => name === 'winRate' ? [`${v}%`, 'Win Rate'] : [v, name]}
+                />
+                <Bar dataKey="winRate" radius={[0, 5, 5, 0]}>
+                  {data.winRateBySetup.map((e, i) => (
+                    <Cell key={i} fill={e.winRate >= 50 ? '#05d890' : '#ff3d5a'} opacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
 
       {/* ── Best / Worst ──────────────────────────── */}
       {(data.bestTrade || data.worstTrade) && (
