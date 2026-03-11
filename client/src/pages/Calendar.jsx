@@ -54,7 +54,7 @@ export default function Calendar() {
   }).length;
   const lossDays = [...activeDays].filter(d => {
     const dayTrades = (dayMap[d] || []).filter(t => t.pnl !== null);
-    return dayTrades.reduce((s, t) => s + t.pnl, 0) <= 0;
+    return dayTrades.reduce((s, t) => s + t.pnl, 0) < 0;
   }).length;
 
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); setSelected(null); };

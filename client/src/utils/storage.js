@@ -1,8 +1,12 @@
 const TRADES_KEY = 'tj_trades';
 
 export function getTrades() {
-  const data = localStorage.getItem(TRADES_KEY);
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem(TRADES_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function saveTrades(trades) {

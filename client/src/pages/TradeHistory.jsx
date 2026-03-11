@@ -160,8 +160,10 @@ export default function TradeHistory() {
                   <th>Symbol</th>
                   <th>Direction</th>
                   <th>P&L</th>
+                  <th>Setup</th>
                   <th>Grade</th>
                   <th>Session</th>
+                  <th>Emotion</th>
                   <th>Date</th>
                   <th></th>
                 </tr>
@@ -180,12 +182,21 @@ export default function TradeHistory() {
                     <td className={`font-mono ${trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : ''}`}>
                       {formatPnl(trade.pnl)}
                     </td>
+                    <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {trade.setup || <span className="text-muted">—</span>}
+                    </td>
                     <td style={{ fontWeight: 700, fontSize: '0.9rem', color: trade.grade === 'A' ? 'var(--green)' : trade.grade === 'B' ? 'orange' : trade.grade === 'C' ? 'var(--red)' : 'var(--text-muted)' }}>
                       {trade.grade || '—'}
                     </td>
                     <td>
                       {trade.session
                         ? <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'var(--bg-input)', padding: '2px 7px', borderRadius: 4 }}>{trade.session}</span>
+                        : <span className="text-muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      {trade.emotion
+                        ? <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{trade.emotion}</span>
                         : <span className="text-muted">—</span>
                       }
                     </td>

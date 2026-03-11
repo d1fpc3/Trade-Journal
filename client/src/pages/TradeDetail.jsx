@@ -130,7 +130,12 @@ export default function TradeDetail() {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
+    const MAX_MB = 3;
     files.forEach(file => {
+      if (file.size > MAX_MB * 1024 * 1024) {
+        setError(`"${file.name}" is too large (max ${MAX_MB}MB). Resize it first.`);
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (ev) => {
         const base64 = ev.target.result;

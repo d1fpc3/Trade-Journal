@@ -38,9 +38,14 @@ export default function LogTrade() {
   const pnlColor = !form.pnl ? 'var(--text-primary)' : pnlNum >= 0 ? 'var(--green)' : 'var(--red)';
 
   // ── Image handling ──────────────────────────────
+  const MAX_IMG_MB = 3;
   const processFiles = (files) => {
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
+      if (file.size > MAX_IMG_MB * 1024 * 1024) {
+        setError(`"${file.name}" is too large (max ${MAX_IMG_MB}MB). Resize it first.`);
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (ev) => {
         const id = Date.now().toString() + Math.random().toString(36).slice(2);

@@ -317,7 +317,7 @@ export default function Analytics() {
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="pnl" radius={[5, 5, 0, 0]}>
                   {data.pnlBySession.map((e, i) => (
-                    <Cell key={i} fill={e.pnl >= 0 ? '#4d9fff' : '#ff3d5a'} opacity={0.85} />
+                    <Cell key={i} fill={e.pnl >= 0 ? '#05d890' : '#ff3d5a'} opacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
