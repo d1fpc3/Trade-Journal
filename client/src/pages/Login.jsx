@@ -135,7 +135,7 @@ export default function Login() {
       overflow: 'hidden'
     }}>
       {/* ── Left: Hero ── */}
-      <div style={{
+      <div className="login-hero" style={{
         flex: 1, position: 'relative', display: 'flex', flexDirection: 'column',
         justifyContent: 'center', padding: '60px 64px',
         background: 'linear-gradient(135deg, #08081a 0%, #060610 100%)',
@@ -230,7 +230,7 @@ export default function Login() {
       </div>
 
       {/* ── Right: Form ── */}
-      <div style={{
+      <div className="login-form-side" style={{
         width: '100%', maxWidth: 480,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',

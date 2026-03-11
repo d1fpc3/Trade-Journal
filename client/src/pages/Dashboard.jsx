@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getTrades, saveTrades, exportTrades, importTrades } from '../utils/storage.js';
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
 
 function formatPnl(val) {
   if (val === null || val === undefined) return '—';
@@ -82,7 +83,21 @@ export default function Dashboard() {
   };
 
   const analytics = computeAnalytics(trades);
-  const recentTrades = trades.slice(0, 5);
+  const sortedTrades = [...trades].sort((a, b) => {
+    const da = a.date ?? a.entry_date ?? '';
+    const db = b.date ?? b.entry_date ?? '';
+    return db.localeCompare(da);
+  });
+  const recentTrades = sortedTrades.slice(0, 5);
+
+  // Mini equity curve data
+  const equityCurve = (() => {
+    const withPnl = [...trades]
+      .filter(t => t.pnl !== null)
+      .sort((a, b) => (a.date ?? a.entry_date ?? '').localeCompare(b.date ?? b.entry_date ?? ''));
+    let cum = 0;
+    return withPnl.map(t => { cum += t.pnl; return { v: parseFloat(cum.toFixed(2)) }; });
+  })();
 
   return (
     <div className="page-container">
@@ -156,6 +171,30 @@ export default function Dashboard() {
           sub={`Avg loss: ${analytics.avgLoss ? formatPnl(analytics.avgLoss) : '—'}`}
         />
       </div>
+
+      {/* Mini Equity Curve */}
+      {equityCurve.length > 1 && (
+        <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Equity Curve · {equityCurve.length} trades
+            </span>
+            <Link to="/analytics" className="btn btn-ghost btn-sm" style={{ fontSize: '0.75rem' }}>Full Analytics →</Link>
+          </div>
+          <ResponsiveContainer width="100%" height={80}>
+            <LineChart data={equityCurve} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+              <Tooltip
+                contentStyle={{ background: '#0f0f18', border: '1px solid #252540', borderRadius: 6, fontSize: '0.75rem', padding: '6px 10px' }}
+                formatter={v => [`${v >= 0 ? '+' : ''}$${Math.abs(v).toFixed(2)}`, 'Equity']}
+                labelFormatter={() => ''}
+              />
+              <Line type="monotone" dataKey="v" stroke={analytics.totalPnl >= 0 ? '#05d890' : '#ff3d5a'}
+                strokeWidth={2} dot={false}
+                activeDot={{ r: 3, fill: analytics.totalPnl >= 0 ? '#05d890' : '#ff3d5a', stroke: 'none' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Recent Trades */}
       <div className="card">

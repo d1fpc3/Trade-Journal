@@ -27,14 +27,20 @@ export default function TradeHistory() {
     setAllTrades(getTrades());
   }, []);
 
-  const filtered = allTrades.filter(t => {
-    if (filters.symbol && !t.symbol.toUpperCase().includes(filters.symbol.toUpperCase())) return false;
-    if (filters.direction && t.direction !== filters.direction) return false;
-    const tradeDate = t.date ?? t.entry_date ?? '';
-    if (filters.from_date && tradeDate < filters.from_date) return false;
-    if (filters.to_date && tradeDate > filters.to_date) return false;
-    return true;
-  });
+  const filtered = allTrades
+    .filter(t => {
+      if (filters.symbol && !t.symbol.toUpperCase().includes(filters.symbol.toUpperCase())) return false;
+      if (filters.direction && t.direction !== filters.direction) return false;
+      const tradeDate = t.date ?? t.entry_date ?? '';
+      if (filters.from_date && tradeDate < filters.from_date) return false;
+      if (filters.to_date && tradeDate > filters.to_date) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const da = a.date ?? a.entry_date ?? '';
+      const db = b.date ?? b.entry_date ?? '';
+      return db.localeCompare(da);
+    });
 
   const totalPnl = filtered.filter(t => t.pnl !== null).reduce((s, t) => s + t.pnl, 0);
 

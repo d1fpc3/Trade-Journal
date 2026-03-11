@@ -198,14 +198,24 @@ export default function TradeDetail() {
               {formatPnl(trade.pnl)}
             </p>
           </div>
-          {trade.pnl_percent !== null && (
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>RETURN</p>
-              <p style={{ fontSize: '1.5rem', fontWeight: 700, color: pnlColor, fontFamily: 'monospace' }}>
-                {trade.pnl_percent >= 0 ? '+' : ''}{Number(trade.pnl_percent).toFixed(2)}%
-              </p>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            {trade.risk_amount && trade.risk_amount > 0 && (
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>R-MULTIPLE</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: pnlColor, fontFamily: 'monospace' }}>
+                  {(trade.pnl / trade.risk_amount) >= 0 ? '+' : ''}{(trade.pnl / trade.risk_amount).toFixed(2)}R
+                </p>
+              </div>
+            )}
+            {trade.pnl_percent != null && (
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>RETURN</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: pnlColor, fontFamily: 'monospace' }}>
+                  {trade.pnl_percent >= 0 ? '+' : ''}{Number(trade.pnl_percent).toFixed(2)}%
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

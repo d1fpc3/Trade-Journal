@@ -99,7 +99,7 @@ function computeAnalytics(trades) {
     (t.mistakes || []).forEach(m => { mistakeMap[m] = (mistakeMap[m] || 0) + 1; });
   });
   const mistakeFreq = Object.entries(mistakeMap)
-    .map(([mistake, count]) => ({ mistake: mistake.replace(' ', '\n'), count }))
+    .map(([mistake, count]) => ({ mistake, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
