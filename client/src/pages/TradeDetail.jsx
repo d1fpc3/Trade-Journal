@@ -32,12 +32,34 @@ export default function TradeDetail() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [lightbox, setLightbox] = useState(null); // { src, index }
+  const lbContainerRef = useRef();
+  const lbImgRef = useRef();
+  const lbHintRef = useRef();
+  const lbZoomedRef = useRef(false);
+
+  const toggleLbZoom = (e) => {
+    e.stopPropagation();
+    const img = lbImgRef.current;
+    const container = lbContainerRef.current;
+    const hint = lbHintRef.current;
+    if (!img || !container) return;
+    lbZoomedRef.current = !lbZoomedRef.current;
+    const zoomed = lbZoomedRef.current;
+    img.style.maxWidth = zoomed ? 'none' : '88vw';
+    img.style.maxHeight = zoomed ? 'none' : 'calc(100vh - 80px)';
+    img.style.cursor = zoomed ? 'zoom-out' : 'zoom-in';
+    container.style.overflow = zoomed ? 'auto' : 'hidden';
+    container.style.alignItems = zoomed ? 'flex-start' : 'center';
+    container.style.justifyContent = zoomed ? 'flex-start' : 'center';
+    if (hint) hint.textContent = zoomed ? 'Click image to zoom out · scroll to pan' : 'Click image to zoom in';
+  };
 
   useEffect(() => {
+    lbZoomedRef.current = false;
     const onKey = (e) => { if (e.key === 'Escape') setLightbox(null); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [lightbox]);
 
   const [form, setForm] = useState({});
 
@@ -452,21 +474,21 @@ export default function TradeDetail() {
       {/* Lightbox */}
       {lightbox && (
         <div
+          ref={lbContainerRef}
           onClick={() => setLightbox(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 1000,
             background: 'rgba(0,0,0,0.92)',
             backdropFilter: 'blur(8px)',
-            overflow: lightbox.zoomed ? 'auto' : 'hidden',
+            overflow: 'hidden',
             display: 'flex',
-            alignItems: lightbox.zoomed ? 'flex-start' : 'center',
-            justifyContent: lightbox.zoomed ? 'flex-start' : 'center',
-            padding: lightbox.zoomed ? '56px 24px 24px' : '56px 24px 24px',
-            animation: 'fadeIn 0.18s ease both',
-            cursor: lightbox.zoomed ? 'zoom-out' : 'default'
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '56px 24px 24px',
+            animation: 'fadeIn 0.18s ease both'
           }}
         >
-          {/* Top bar: close + zoom hint */}
+          {/* Top bar */}
           <div
             onClick={e => e.stopPropagation()}
             style={{
@@ -478,19 +500,19 @@ export default function TradeDetail() {
               borderBottom: '1px solid rgba(255,255,255,0.08)'
             }}
           >
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>
-              {lightbox.zoomed ? 'Click image to zoom out · scroll to pan' : 'Click image to zoom in'}
+            <span ref={lbHintRef} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>
+              Click image to zoom in
             </span>
             <div style={{ display: 'flex', gap: 8 }}>
               {trade.images.length > 1 && (
                 <>
                   <button
-                    onClick={e => { e.stopPropagation(); const prev = (lightbox.index - 1 + trade.images.length) % trade.images.length; setLightbox({ src: trade.images[prev].data, index: prev, zoomed: false }); }}
+                    onClick={e => { e.stopPropagation(); const prev = (lightbox.index - 1 + trade.images.length) % trade.images.length; setLightbox({ src: trade.images[prev].data, index: prev }); }}
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: '#fff', fontSize: '1rem', cursor: 'pointer', padding: '5px 12px' }}
                   >‹</button>
                   <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: '30px' }}>{lightbox.index + 1}/{trade.images.length}</span>
                   <button
-                    onClick={e => { e.stopPropagation(); const next = (lightbox.index + 1) % trade.images.length; setLightbox({ src: trade.images[next].data, index: next, zoomed: false }); }}
+                    onClick={e => { e.stopPropagation(); const next = (lightbox.index + 1) % trade.images.length; setLightbox({ src: trade.images[next].data, index: next }); }}
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: '#fff', fontSize: '1rem', cursor: 'pointer', padding: '5px 12px' }}
                   >›</button>
                 </>
@@ -510,20 +532,19 @@ export default function TradeDetail() {
 
           {/* Image */}
           <img
+            ref={lbImgRef}
             src={lightbox.src}
             alt="Trade screenshot"
-            onClick={e => { e.stopPropagation(); setLightbox(lb => ({ ...lb, zoomed: !lb.zoomed })); }}
+            onClick={toggleLbZoom}
             style={{
               display: 'block',
-              maxWidth: lightbox.zoomed ? 'none' : '88vw',
-              maxHeight: lightbox.zoomed ? 'none' : 'calc(100vh - 80px)',
-              width: lightbox.zoomed ? 'auto' : 'auto',
+              maxWidth: '88vw',
+              maxHeight: 'calc(100vh - 80px)',
               borderRadius: 10,
               objectFit: 'contain',
               boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
               border: '1px solid rgba(255,255,255,0.1)',
-              cursor: lightbox.zoomed ? 'zoom-out' : 'zoom-in',
-              transition: 'box-shadow 0.2s'
+              cursor: 'zoom-in'
             }}
           />
         </div>
