@@ -33,6 +33,12 @@ export default function TradeDetail() {
   const [success, setSuccess] = useState('');
   const [lightbox, setLightbox] = useState(null); // { src, index }
 
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const [form, setForm] = useState({});
 
   useEffect(() => {
@@ -506,8 +512,8 @@ export default function TradeDetail() {
               maxWidth: '90vw', maxHeight: '88vh',
               borderRadius: 12, objectFit: 'contain',
               boxShadow: '0 32px 80px rgba(0,0,0,0.8)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              animation: 'scaleIn 0.2s cubic-bezier(0.22,1,0.36,1) both'
+              border: '1px solid rgba(255,255,255,0.1)',
+              display: 'block'
             }}
           />
 
