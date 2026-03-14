@@ -60,6 +60,18 @@ export async function exportTrades() {
   URL.revokeObjectURL(url);
 }
 
+export async function getBillingStatus() {
+  return apiFetch('/billing/status');
+}
+
+export async function createCheckoutSession() {
+  return apiFetch('/billing/create-checkout-session', { method: 'POST' });
+}
+
+export async function createPortalSession() {
+  return apiFetch('/billing/create-portal-session', { method: 'POST' });
+}
+
 export async function importTrades(jsonString, mode = 'merge') {
   const parsed   = JSON.parse(jsonString);
   const incoming = Array.isArray(parsed) ? parsed : (parsed.trades ?? []);
