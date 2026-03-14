@@ -73,7 +73,7 @@ export default function Dashboard() {
   const importRef = useRef();
 
   useEffect(() => {
-    setTrades(getTrades());
+    getTrades().then(setTrades).catch(console.error);
   }, []);
 
   const handleExport = () => exportTrades();
@@ -82,10 +82,11 @@ export default function Dashboard() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
-        const added = importTrades(ev.target.result, 'merge');
-        setTrades(getTrades());
+        const added = await importTrades(ev.target.result, 'merge');
+        const refreshed = await getTrades();
+        setTrades(refreshed);
         setImportMsg(`${added} trade${added !== 1 ? 's' : ''} imported successfully`);
         setTimeout(() => setImportMsg(''), 4000);
       } catch {
