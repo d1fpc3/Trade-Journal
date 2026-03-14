@@ -26,7 +26,6 @@ app.use('/uploads', express.static(join(__dirname, 'uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trades', tradeRoutes);
-app.use('/api/trades/:id/images', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
