@@ -120,9 +120,9 @@ export default function TradeDetail() {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this trade? This cannot be undone.')) return;
-    deleteTrade(id);
+    await deleteTrade(id);
     navigate('/trades');
   };
 
