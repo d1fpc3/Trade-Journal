@@ -48,11 +48,11 @@ export default function TradeHistory() {
 
   const totalPnl = filtered.filter(t => t.pnl !== null).reduce((s, t) => s + t.pnl, 0);
 
-  const handleDelete = (e, id) => {
+  const handleDelete = async (e, id) => {
     e.stopPropagation();
     if (!confirm('Delete this trade? This cannot be undone.')) return;
-    deleteTrade(id);
-    setAllTrades(getTrades());
+    await deleteTrade(id);
+    setAllTrades(prev => prev.filter(t => t.id !== id));
   };
 
   const clearFilters = () => {
