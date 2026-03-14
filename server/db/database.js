@@ -91,6 +91,36 @@ export function createUser({ username, password, email }) {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
 }
 
+export function getUserById(id) {
+  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+}
+
+export function getUserByStripeCustomer(customerId) {
+  return db.prepare('SELECT * FROM users WHERE stripe_customer_id = ?').get(customerId);
+}
+
+export function updateUserStripe(id, updates) {
+  const fields = [];
+  const values = [];
+  if (updates.stripe_customer_id !== undefined) { fields.push('stripe_customer_id = ?'); values.push(updates.stripe_customer_id); }
+  if (updates.stripe_subscription_id !== undefined) { fields.push('stripe_subscription_id = ?'); values.push(updates.stripe_subscription_id); }
+  if (updates.plan !== undefined) { fields.push('plan = ?'); values.push(updates.plan); }
+  if (updates.plan_expires_at !== undefined) { fields.push('plan_expires_at = ?'); values.push(updates.plan_expires_at); }
+  if (!fields.length) return;
+  values.push(id);
+  db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function updateUserCredentials(id, updates) {
+  const fields = [];
+  const values = [];
+  if (updates.username !== undefined) { fields.push('username = ?'); values.push(updates.username); }
+  if (updates.password !== undefined) { fields.push('password_hash = ?'); values.push(bcrypt.hashSync(updates.password, 10)); }
+  if (!fields.length) return;
+  values.push(id);
+  db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
 export function parseTrade(trade) {
   return {
     ...trade,
