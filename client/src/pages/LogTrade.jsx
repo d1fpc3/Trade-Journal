@@ -72,19 +72,15 @@ export default function LogTrade() {
   const removeImage = (id) => setImages(prev => prev.filter(img => img.id !== id));
 
   // ── Submit ──────────────────────────────────────
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const quantity = form.quantity ? parseFloat(form.quantity) : null;
-    const pnl = form.pnl !== '' ? parseFloat(form.pnl) : null;
-
     const trade = {
-      id: Date.now().toString(),
       symbol: form.symbol.toUpperCase(),
       direction: form.direction,
-      quantity,
-      pnl,
+      quantity: form.quantity ? parseFloat(form.quantity) : null,
+      pnl: form.pnl !== '' ? parseFloat(form.pnl) : null,
       date: form.date,
       session: form.session,
       setup: form.setup,
@@ -94,11 +90,14 @@ export default function LogTrade() {
       mistakes: form.mistakes,
       notes: form.notes,
       images,
-      created_at: new Date().toISOString()
     };
 
-    addTrade(trade);
-    navigate(`/trades/${trade.id}`);
+    try {
+      const saved = await addTrade(trade);
+      navigate(`/trades/${saved.id}`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
