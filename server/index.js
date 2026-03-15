@@ -7,6 +7,7 @@ import { existsSync } from 'fs';
 import authRoutes from './routes/auth.js';
 import tradeRoutes from './routes/trades.js';
 import billingRoutes, { stripeWebhook } from './routes/billing.js';
+import uploadRoutes from './routes/uploads.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
