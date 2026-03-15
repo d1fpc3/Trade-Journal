@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { unlinkSync, existsSync } from 'fs';
 import db from '../db/database.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePlan } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
