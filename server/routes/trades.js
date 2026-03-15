@@ -47,6 +47,13 @@ router.post('/', requireAuth, (req, res) => {
       return res.status(400).json({ error: 'symbol, direction, and date are required' });
     }
 
+    if (req.user.plan !== 'pro') {
+      const { count } = db.prepare('SELECT COUNT(*) as count FROM trades WHERE user_id = ?').get(req.user.id);
+      if (count >= 50) {
+        return res.status(403).json({ error: 'Free plan is limited to 50 trades. Upgrade to Pro for unlimited.', upgrade: true });
+      }
+    }
+
     const result = db.prepare(`
       INSERT INTO trades (user_id, symbol, direction, quantity, pnl, date, session, setup, risk_amount, emotion, grade, mistakes, notes, images)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
