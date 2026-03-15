@@ -31,7 +31,7 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 102
 const router = Router({ mergeParams: true });
 
 // POST /api/trades/:id/images
-router.post('/', requireAuth, upload.array('images', 10), (req, res) => {
+router.post('/', requireAuth, requirePlan('pro'), upload.array('images', 10), (req, res) => {
   try {
     const trade = db.prepare('SELECT * FROM trades WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
     if (!trade) return res.status(404).json({ error: 'Trade not found' });
