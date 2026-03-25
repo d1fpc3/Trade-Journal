@@ -34,6 +34,7 @@ app.use('/uploads', express.static(join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/trades/:id/images', uploadRoutes);
+app.use('/api/investments', investmentRoutes);
 app.use('/api/billing', billingRoutes);
 
 // Health check
