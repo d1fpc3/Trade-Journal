@@ -9,8 +9,6 @@ import TradeDetail from './pages/TradeDetail.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Settings from './pages/Settings.jsx';
-import InvestmentHistory from './pages/InvestmentHistory.jsx';
-import LogInvestment from './pages/LogInvestment.jsx';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
