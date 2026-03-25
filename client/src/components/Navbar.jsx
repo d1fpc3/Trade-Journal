@@ -5,9 +5,8 @@ const NAV_LINKS = [
   { to: '/',          label: 'Dashboard', end: true },
   { to: '/log-trade', label: '+ Log Trade' },
   { to: '/trades',    label: 'History' },
-  { to: '/analytics',   label: 'Analytics' },
-  { to: '/calendar',    label: 'Calendar' },
-  { to: '/investments', label: 'Investments' }
+  { to: '/analytics', label: 'Analytics' },
+  { to: '/calendar',  label: 'Calendar' }
 ];
 
 export default function Navbar() {
