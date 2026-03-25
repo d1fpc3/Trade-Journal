@@ -60,31 +60,6 @@ export async function exportTrades() {
   URL.revokeObjectURL(url);
 }
 
-export async function getInvestments(filters = {}) {
-  const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
-  ).toString();
-  return apiFetch(`/investments${params ? '?' + params : ''}`);
-}
-
-export async function addInvestment(data) {
-  return apiFetch('/investments', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function updateInvestment(id, updates) {
-  return apiFetch(`/investments/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(updates),
-  });
-}
-
-export async function deleteInvestment(id) {
-  return apiFetch(`/investments/${id}`, { method: 'DELETE' });
-}
-
 export async function getBillingStatus() {
   return apiFetch('/billing/status');
 }
